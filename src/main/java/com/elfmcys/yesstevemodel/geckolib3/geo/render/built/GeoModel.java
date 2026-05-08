@@ -12,15 +12,12 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.*;
 
 /**
  * Bedrock的.geo模型文件
  */
 public class GeoModel {
-
     @NotNull
     public final List<GeoBone> bones;
 
@@ -110,59 +107,27 @@ public class GeoModel {
         public Vector3f normal;
     }
 
-    public long nativeModelHandle = 0;
-    public final ByteBuffer vertexOutBuffer = /*ByteBuffer.allocateDirect(900000 * 14 * 4).order(ByteOrder.nativeOrder())*/null; //FIXME
-
-    public static native long nInitModelCache(ByteBuffer buffer);
-
-    public static native void nDestroyModelCache(long handle);
-
-    public static native int nComputeModelVertices(long handle, ByteBuffer outBuffer, ByteBuffer matrixBuffer, ByteBuffer animBuffer, int renderPartMask, int packedLight, int packedOverlay, float r, float g, float b, float a, boolean sb);
+    private NativeModelCache nativeCache;
 
     public void buildNativeCache() {
-        if (bakedBones == null || bakedBones.isEmpty()) return;
+        getOrBuildNativeCache();
+    }
 
-        ByteBuffer buffer = ByteBuffer.allocateDirect(1024 * 1024 * 20).order(ByteOrder.nativeOrder());
-
-        buffer.putInt(bakedBones.size());
-        for (BakedBone bone : bakedBones) {
-            buffer.putInt(bone.parentIdx);
-            buffer.putInt(bone.partMask);
-            buffer.put((byte) (bone.glow ? 1 : 0));
-            buffer.putFloat(bone.pivotX);
-            buffer.putFloat(bone.pivotY);
-            buffer.putFloat(bone.pivotZ);
-
-            buffer.putInt(bone.cubes.size());
-            for (BakedCube cube : bone.cubes) {
-                buffer.put((byte) (cube.cullable ? 1 : 0));
-                buffer.putInt(cube.quads.size());
-                for (BakedQuad quad : cube.quads) {
-                    for (int v = 0; v < 4; v++) { // 12 floats
-                        buffer.putFloat(quad.positions[v].x());
-                        buffer.putFloat(quad.positions[v].y());
-                        buffer.putFloat(quad.positions[v].z());
-                    }
-                    for (int v = 0; v < 4; v++) { // 8 floats
-                        buffer.putFloat(quad.uvs[v].x());
-                        buffer.putFloat(quad.uvs[v].y());
-                    }
-                    // 3 floats
-                    buffer.putFloat(quad.normal.x());
-                    buffer.putFloat(quad.normal.y());
-                    buffer.putFloat(quad.normal.z());
-                }
-            }
+    public NativeModelCache getOrBuildNativeCache() {
+        if (nativeCache == null) {
+            nativeCache = NativeModelCache.build(this);
         }
+        return nativeCache;
+    }
 
-        buffer.position(0);
-//        this.nativeModelHandle = nInitModelCache(buffer);
+    public NativeModelCache nativeCache() {
+        return nativeCache;
     }
 
     public void freeNativeCache() {
-        if (nativeModelHandle != 0) {
-            nDestroyModelCache(nativeModelHandle);
-            nativeModelHandle = 0;
+        if (nativeCache != null) {
+            nativeCache.close();
+            nativeCache = null;
         }
     }
 

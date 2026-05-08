@@ -4,11 +4,15 @@ import com.elfmcys.yesstevemodel.resource.models.Metadata;
 import com.elfmcys.yesstevemodel.client.gui.metadata.ModelDisplayAssets;
 import com.elfmcys.yesstevemodel.model.format.ServerModelInfo;
 import com.elfmcys.yesstevemodel.client.gui.ModelMetadataPresenter;
+import com.elfmcys.yesstevemodel.geckolib3.geo.render.built.GeoModel;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ModelAssembly {
 
@@ -70,5 +74,25 @@ public class ModelAssembly {
             return ModelMetadataPresenter.getLocalizedModelString(this, "metadata.name", name.getName());
         }
         return str;
+    }
+
+    public void freeNativeCaches() {
+        Set<GeoModel> freed = Collections.newSetFromMap(new IdentityHashMap<>());
+        if (this.animationBundle != null) {
+            freeNativeCache(freed, this.animationBundle.getMainModel());
+            freeNativeCache(freed, this.animationBundle.getArmModel());
+        }
+        for (ProjectileModelBundle bundle : this.projectileModels.values()) {
+            if (bundle != null) freeNativeCache(freed, bundle.getModel());
+        }
+        for (VehicleModelBundle bundle : this.vehicleModels.values()) {
+            if (bundle != null) freeNativeCache(freed, bundle.getModel());
+        }
+    }
+
+    private static void freeNativeCache(Set<GeoModel> freed, GeoModel model) {
+        if (model != null && freed.add(model)) {
+            model.freeNativeCache();
+        }
     }
 }
