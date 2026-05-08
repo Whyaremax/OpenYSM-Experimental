@@ -5,7 +5,7 @@ import com.elfmcys.yesstevemodel.audio.*;
 import com.elfmcys.yesstevemodel.geckolib3.geo.render.built.GeoModel;
 import com.elfmcys.yesstevemodel.client.animation.molang.MolangEventDispatcher;
 import com.elfmcys.yesstevemodel.client.model.ModelAssembly;
-import com.elfmcys.yesstevemodel.client.compat.oculus.OculusCompat;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.client.animation.molang.PhysicsManager;
 import com.elfmcys.yesstevemodel.client.animation.molang.MolangWatchRegistry;
 import com.elfmcys.yesstevemodel.client.renderer.AnimationDebugOverlay;
@@ -179,7 +179,7 @@ public abstract class GeoEntity<T extends Entity> extends AnimatableEntity<T> {
 
     @Override
     public boolean shouldSkipAnimation(AnimationEvent<?> event) {
-        return event.isFirstPerson() || OculusCompat.isPBRActive();
+        return event.isFirstPerson() || YsmClientCompat.isPbrActive();
     }
 
     @Override

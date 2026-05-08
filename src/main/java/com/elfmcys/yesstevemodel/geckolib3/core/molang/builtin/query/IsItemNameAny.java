@@ -1,6 +1,6 @@
 package com.elfmcys.yesstevemodel.geckolib3.core.molang.builtin.query;
 
-import com.elfmcys.yesstevemodel.client.compat.cosmeticarmorreworked.CosmeticArmorHelper;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.context.IContext;
 import com.elfmcys.yesstevemodel.geckolib3.util.MolangUtils;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.funciton.entity.LivingEntityFunction;
@@ -19,7 +19,7 @@ public class IsItemNameAny extends LivingEntityFunction {
         if (slotType == null) {
             return null;
         }
-        ItemStack stack = CosmeticArmorHelper.getArmorItem(context.entity().entity(), slotType);
+        ItemStack stack = YsmClientCompat.getArmorItem(context.entity().entity(), slotType);
         if (!stack.isEmpty() && (key = ForgeRegistries.ITEMS.getKey(stack.getItem())) != null) {
             for (int i = 1; i < arguments.size(); i++) {
                 ResourceLocation location = arguments.getResourceLocation(context, i);

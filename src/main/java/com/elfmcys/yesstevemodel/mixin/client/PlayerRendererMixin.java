@@ -2,9 +2,7 @@ package com.elfmcys.yesstevemodel.mixin.client;
 
 import com.elfmcys.yesstevemodel.YesSteveModel;
 import com.elfmcys.yesstevemodel.capability.PlayerCapabilityProvider;
-import com.elfmcys.yesstevemodel.client.compat.firstperson.FirstPersonCompat;
-import com.elfmcys.yesstevemodel.client.compat.playeranimator.PlayerAnimatorCompat;
-import com.elfmcys.yesstevemodel.client.compat.realcamera.RealCameraCompat;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.client.renderer.FirstPersonArmRenderHooks;
 import com.elfmcys.yesstevemodel.client.renderer.RendererManager;
 import com.elfmcys.yesstevemodel.config.GeneralConfig;
@@ -38,10 +36,10 @@ public class PlayerRendererMixin {
         com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
             if (cap.isModelActive()
                     && (!CameraUtil.isFirstPerson(cap)
-                    || FirstPersonCompat.isFirstPersonActive()
-                    || RealCameraCompat.isActive()
+                    || YsmClientCompat.isFirstPersonActive()
+                    || YsmClientCompat.isRealCameraActive()
                     || GeneralConfig.DISABLE_EXTERNAL_FP_ANIM.get()
-                    || !PlayerAnimatorCompat.isPlayerAnimated(localPlayer))) {
+                    || !YsmClientCompat.isPlayerAnimatorAnimated(localPlayer))) {
                 ci.cancel();
                 RendererManager.getPlayerRenderer().render(player, player.getYRot(), partialTick, poseStack, bufferSource, packedLight);
             }

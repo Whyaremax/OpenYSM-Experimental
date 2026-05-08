@@ -1,6 +1,5 @@
 package com.elfmcys.yesstevemodel.geckolib3.geo.animated;
 
-import com.elfmcys.yesstevemodel.client.compat.touhoulittlemaid.TouhouMaidBoneProcessor;
 import com.elfmcys.yesstevemodel.geckolib3.core.processor.IBone;
 import com.elfmcys.yesstevemodel.geckolib3.geo.render.built.GeoBone;
 import org.joml.Vector3f;
@@ -247,7 +246,7 @@ public class AnimatedGeoBone implements IBone {
 
     public <T> T getTouhouMaidBone() {
         if (this.touhouMaidBone == null) {
-            this.touhouMaidBone = TouhouMaidBoneProcessor.createLocationBone(this);
+            this.touhouMaidBone = new Object();
         }
         return (T) this.touhouMaidBone;
     }

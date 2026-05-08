@@ -40,6 +40,16 @@
 - 旧版/未加密模型仍可继续扩充更多第三方真实样本矩阵；当前已覆盖本地 format 9/15 与未加密 folder/zip 样本。
 - AVX2/SIMD、GPU renderer、native parser/audio/crypto/zstd 加速暂时不是当前补丁目标。
 
+### Fabric port 代码边界
+
+Fabric port 现在保留三类兼容代码，避免核心逻辑在迁移期间被大规模改写：
+
+- `net.minecraftforge.*` 只作为临时 Forge API 兼容层存在，用来承接尚未完全改成 Fabric API 的配置、事件、网络和 registry 调用。
+- `src/fabricStubs/java` 只保留仍被核心路径引用的第三方 mod no-op stub；已经不需要独立类的 no-op 兼容会合并到 OpenYSM 自己的 Fabric 边界。
+- `src/generated/resources/META-INF/native` 是发布 jar 需要携带的 native renderer 资源，不属于可删除的兼容脚手架。
+
+清理优先级是先删掉重复的 Fabric stub，再逐步把 Forge shim 调用替换成 OpenYSM 自己的 `Ysm*` 平台/网络/配置封装。真实第三方 Fabric 集成只有在确认对应 API 后再恢复。
+
 ## 构建与验证
 
 当前 Fabric 开发 jar 输出到 `build/devlibs/`，可发布/安装的 remap 后 jar 输出到 `build/libs/ysm-2.6.5-fabric+mc1.20.1.jar`。

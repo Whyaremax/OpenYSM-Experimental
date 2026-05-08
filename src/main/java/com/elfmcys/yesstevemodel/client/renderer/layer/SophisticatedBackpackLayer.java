@@ -1,6 +1,5 @@
 package com.elfmcys.yesstevemodel.client.renderer.layer;
 
-import com.elfmcys.yesstevemodel.client.compat.sbackpack.SBackpackCompat;
 import com.elfmcys.yesstevemodel.client.entity.CustomPlayerEntity;
 import com.elfmcys.yesstevemodel.geckolib3.geo.GeoLayerRenderer;
 import com.elfmcys.yesstevemodel.geckolib3.geo.animated.AnimatedGeoModel;
@@ -10,8 +9,6 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.p3pp3rf1y.sophisticatedbackpacks.client.render.BackpackLayerRenderer;
 
 public class SophisticatedBackpackLayer extends GeoLayerRenderer<CustomPlayerEntity> {
 
@@ -32,18 +29,6 @@ public class SophisticatedBackpackLayer extends GeoLayerRenderer<CustomPlayerEnt
 
     @Override
     public void render(PoseStack poseStack, MultiBufferSource bufferSource, int packedLightIn, CustomPlayerEntity entityLivingBaseIn, float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks, float netHeadYaw, float headPitch) {
-        Player player;
-        ItemStack stack;
-        AnimatedGeoModel model = entityLivingBaseIn.getCurrentModel();
-        if (model != null && !model.backpackBones().isEmpty() && (stack = SBackpackCompat.getBackpackItem((player = entityLivingBaseIn.getEntity()))) != null) {
-            poseStack.pushPose();
-            renderBackpack(poseStack, model);
-            poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(180.0f));
-            poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180.0f));
-            poseStack.translate(0.0d, -0.1d, 0.0d);
-            BackpackLayerRenderer.renderBackpack(this.backpackModel, player, poseStack, bufferSource, packedLightIn, stack, false);
-            poseStack.popPose();
-        }
     }
 
     public void renderBackpack(PoseStack poseStack, AnimatedGeoModel model) {

@@ -1,7 +1,6 @@
 package com.elfmcys.yesstevemodel.client.renderer;
 
 import com.elfmcys.yesstevemodel.YesSteveModel;
-import com.elfmcys.yesstevemodel.client.compat.sbackpack.SBackpackCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -30,7 +29,6 @@ public class RendererManager {
         projectileRenderer = new ProjectileRenderer(context);
         handRenderer = new HandItemRenderer();
         vehicleRenderer = new VehicleRenderer(context);
-        SBackpackCompat.setupRenderLayers();
     }
 
     @SubscribeEvent

@@ -3,10 +3,7 @@ package com.elfmcys.yesstevemodel.geckolib3.core.controller.controllers;
 import com.elfmcys.yesstevemodel.client.animation.AnimationManager;
 import com.elfmcys.yesstevemodel.client.animation.condition.ConditionArmor;
 import com.elfmcys.yesstevemodel.client.animation.predicate.*;
-import com.elfmcys.yesstevemodel.client.compat.gun.common.ItemUseAnimationPredicate;
 import com.elfmcys.yesstevemodel.client.entity.CustomPlayerEntity;
-import com.elfmcys.yesstevemodel.client.compat.carryon.CarryOnCompat;
-import com.elfmcys.yesstevemodel.client.compat.parcool.ParcoolCompat;
 import com.elfmcys.yesstevemodel.client.model.AnimationDataProvider;
 import com.elfmcys.yesstevemodel.client.model.PlayerModelBundle;
 import com.elfmcys.yesstevemodel.client.model.processor.*;
@@ -37,9 +34,6 @@ public class PlayerAnimationController {
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static void registerControllers() {
         registerParallelController("pre_parallel", (animationEntryKey, entity, linkedAnimationName) -> new CompositeAnimationController(entity, animationEntryKey, 0.0f, linkedAnimationName != null ? new NamedAnimationPredicate(linkedAnimationName) : StopAnimationPredicate.INSTANCE));
-        ParcoolCompat.getControllerFactory().ifPresent(controllerFactory -> {
-            registerController("parcool", controllerFactory);
-        });
         registerController("vehicle", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.1f, new LivingMovementAnimationPredicate()));
         registerSlotController("pre_main", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.0f, new StopAnimationPredicate()));
         registerController("main", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.1f, new AnimationManager()));
@@ -48,9 +42,6 @@ public class PlayerAnimationController {
         registerController("hold_offhand", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.1f, new OffHandHoldPredicate()));
         registerController("hold_mainhand", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.1f, new MainHandHoldPredicate()));
         registerSlotController("post_hold", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.0f, new StopAnimationPredicate()));
-        if (ItemUseAnimationPredicate.isLoaded()) {
-            registerController("fire", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.0f, new ItemUseAnimationPredicate()));
-        }
         registerSlotController("pre_swing", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.0f, new StopAnimationPredicate()));
         registerController("swing", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.0f, new ItemHoldAnimationPredicate()));
         registerSlotController("post_swing", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.0f, new StopAnimationPredicate()));
@@ -58,7 +49,6 @@ public class PlayerAnimationController {
         registerController("use", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.1f, new InteractionHandAnimationPredicate()));
         registerSlotController("post_use", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.0f, new StopAnimationPredicate()));
         registerController("passenger", (animationEntryKey, entity) -> new CompositeAnimationController(entity, animationEntryKey, 0.1f, new OffhandAttackAnimationPredicate()));
-        CarryOnCompat.getControllerFactory().ifPresent(controllerFactory -> registerController("carry_on", controllerFactory));
         registerController("cap", (animationEntryKey, entity) -> new PredicateBasedController(entity, animationEntryKey, 0.0f, new PlayerBaseAnimationPredicate()));
         registerController("gui_hover", true, (animationEntryKey, entity) -> new PredicateBasedController(entity, animationEntryKey, 0.0f, new PlayerCustomAnimationPredicate()));
         registerController("gui_focus", true, (animationEntryKey, entity) -> new PredicateBasedController(entity, animationEntryKey, 0.0f, new PlayerIdleAnimationPredicate()));

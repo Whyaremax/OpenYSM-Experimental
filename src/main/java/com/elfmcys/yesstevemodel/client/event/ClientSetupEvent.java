@@ -2,33 +2,15 @@ package com.elfmcys.yesstevemodel.client.event;
 
 import com.elfmcys.yesstevemodel.YesSteveModel;
 import com.elfmcys.yesstevemodel.client.compat.gun.tacz.TacCompat;
-import com.elfmcys.yesstevemodel.client.compat.immersiveaircraft.ImmersiveAirCraftCompat;
 import com.elfmcys.yesstevemodel.client.compat.immersivemelodies.ImmersiveMelodiesCompat;
-import com.elfmcys.yesstevemodel.client.compat.ironsspellbooks.SpellbooksCompat;
 import com.elfmcys.yesstevemodel.client.animation.AnimationRegister;
-import com.elfmcys.yesstevemodel.client.compat.acceleratedrendering.AcceleratedRenderingCompat;
-import com.elfmcys.yesstevemodel.client.compat.bettercombat.BetterCombatCompat;
-import com.elfmcys.yesstevemodel.client.compat.carryon.CarryOnCompat;
-import com.elfmcys.yesstevemodel.client.compat.cosmeticarmorreworked.CosmeticArmorCompat;
 import com.elfmcys.yesstevemodel.client.compat.curios.CuriosCompat;
-import com.elfmcys.yesstevemodel.client.compat.elytraslot.ElytraSlotCompat;
-import com.elfmcys.yesstevemodel.client.compat.firstperson.FirstPersonCompat;
 import com.elfmcys.yesstevemodel.client.compat.gun.swarfare.SWarfareCompat;
-import com.elfmcys.yesstevemodel.client.compat.oculus.OculusCompat;
-import com.elfmcys.yesstevemodel.client.compat.optifine.OptiFineDetector;
-import com.elfmcys.yesstevemodel.client.compat.parcool.ParcoolCompat;
-import com.elfmcys.yesstevemodel.client.compat.playeranimator.PlayerAnimatorCompat;
-import com.elfmcys.yesstevemodel.client.compat.realcamera.RealCameraCompat;
-import com.elfmcys.yesstevemodel.client.compat.simplehats.SimpleHatsHelper;
 import com.elfmcys.yesstevemodel.client.compat.slashblade.SlashBladeCompat;
-import com.elfmcys.yesstevemodel.client.compat.swem.SWEMCompat;
 import com.elfmcys.yesstevemodel.client.compat.touhoulittlemaid.TouhouLittleMaidCompat;
 import com.elfmcys.yesstevemodel.client.input.ExtraAnimationKey;
 import com.elfmcys.yesstevemodel.client.input.*;
-import com.elfmcys.yesstevemodel.client.compat.sbackpack.SBackpackCompat;
 import com.elfmcys.yesstevemodel.client.renderer.*;
-import com.elfmcys.yesstevemodel.client.compat.simpleplanes.SimplePlanesCompat;
-import com.elfmcys.yesstevemodel.client.compat.create.CreateCompat;
 import net.minecraft.network.chat.Component;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
@@ -45,8 +27,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
-
-import java.util.Optional;
 
 @Mod.EventBusSubscriber(value = {Dist.CLIENT}, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class ClientSetupEvent {
@@ -90,38 +70,14 @@ public class ClientSetupEvent {
         AnimationRegister.registerAnimationState();
         event.enqueueWork(() -> {
             CuriosCompat.init();
-            FirstPersonCompat.init();
-            RealCameraCompat.init();
-            PlayerAnimatorCompat.init();
-            BetterCombatCompat.init();
-            OculusCompat.init();
-            AcceleratedRenderingCompat.init();
-            OptiFineDetector.init();
-            CosmeticArmorCompat.init();
-            ElytraSlotCompat.init();
             TacCompat.init();
             SWarfareCompat.init();
             TouhouLittleMaidCompat.init();
-            CarryOnCompat.init();
-            ParcoolCompat.init();
             SlashBladeCompat.init();
-            SWEMCompat.init();
-            CreateCompat.init();
-            SBackpackCompat.init();
-            SimpleHatsHelper.init();
             ImmersiveMelodiesCompat.init();
-            SpellbooksCompat.init();
-            SimplePlanesCompat.init();
-            ImmersiveAirCraftCompat.init();
-            showInCompatibleMod(SBackpackCompat.getInCompatibleInfo());
-            showInCompatibleMod(ParcoolCompat.getInCompatibleInfo());
             showInCompatibleMod("epicfight", "Epic Fight");
             checkNativeInitialization();
         });
-    }
-
-    private static void showInCompatibleMod(Optional<Pair<String, String>> optional) {
-        optional.ifPresent(pair -> ModLoader.get().addWarning(new ModLoadingWarning(LoadingModList.get().getModFileById(YesSteveModel.MOD_ID).getMods().get(0), ModLoadingStage.SIDED_SETUP, "error.yes_steve_model.incompatible_mod_version", pair.getKey(), pair.getValue())));
     }
 
     private static void showInCompatibleMod(String str, String str2) {

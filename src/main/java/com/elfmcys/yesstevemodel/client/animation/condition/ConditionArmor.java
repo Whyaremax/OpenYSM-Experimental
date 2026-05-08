@@ -1,6 +1,6 @@
 package com.elfmcys.yesstevemodel.client.animation.condition;
 
-import com.elfmcys.yesstevemodel.client.compat.cosmeticarmorreworked.CosmeticArmorHelper;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.util.EquipmentUtil;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
@@ -60,7 +60,7 @@ public class ConditionArmor {
     }
 
     public String doTest(LivingEntity entity, EquipmentSlot slot) {
-        if (CosmeticArmorHelper.getArmorItem(entity, slot).isEmpty()) {
+        if (YsmClientCompat.getArmorItem(entity, slot).isEmpty()) {
             return EMPTY;
         }
         String result = doIdTest(entity, slot);
@@ -75,7 +75,7 @@ public class ConditionArmor {
             return EMPTY;
         }
         Set<ResourceLocation> set = this.idTest.get(equipmentSlot);
-        ResourceLocation key = ForgeRegistries.ITEMS.getKey(CosmeticArmorHelper.getArmorItem(livingEntity, equipmentSlot).getItem());
+        ResourceLocation key = ForgeRegistries.ITEMS.getKey(YsmClientCompat.getArmorItem(livingEntity, equipmentSlot).getItem());
         if (key != null && set.contains(key)) {
             return equipmentSlot.getName() + "$" + key;
         }
@@ -87,7 +87,7 @@ public class ConditionArmor {
             return EMPTY;
         }
         List<TagKey<Item>> list = this.tagTest.get(equipmentSlot);
-        ItemStack stack = CosmeticArmorHelper.getArmorItem(livingEntity, equipmentSlot);
+        ItemStack stack = YsmClientCompat.getArmorItem(livingEntity, equipmentSlot);
         if (ForgeRegistries.ITEMS.tags() == null) {
             return EMPTY;
         }

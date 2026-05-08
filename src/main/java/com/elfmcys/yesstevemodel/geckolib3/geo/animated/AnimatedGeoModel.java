@@ -1,6 +1,5 @@
 package com.elfmcys.yesstevemodel.geckolib3.geo.animated;
 
-import com.elfmcys.yesstevemodel.client.compat.touhoulittlemaid.TouhouMaidBoneProcessor;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.util.StringPool;
 import com.elfmcys.yesstevemodel.geckolib3.core.processor.IBone;
 import com.elfmcys.yesstevemodel.geckolib3.geo.render.built.GeoModel;
@@ -237,7 +236,7 @@ public class AnimatedGeoModel {
 
     public <T> T getTouhouMaidData() {
         if (this.touhouMaidData == null) {
-            this.touhouMaidData = TouhouMaidBoneProcessor.createLocationModel(this);
+            this.touhouMaidData = new Object();
         }
         return (T) this.touhouMaidData;
     }

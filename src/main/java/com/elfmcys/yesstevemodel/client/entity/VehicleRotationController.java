@@ -1,6 +1,5 @@
 package com.elfmcys.yesstevemodel.client.entity;
 
-import com.elfmcys.yesstevemodel.client.compat.immersiveaircraft.ImmersiveAirCraftCompat;
 import com.elfmcys.yesstevemodel.geckolib3.core.controller.IAnimationController;
 import com.elfmcys.yesstevemodel.geckolib3.core.event.predicate.AnimationEvent;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.value.IValue;
@@ -8,7 +7,6 @@ import com.elfmcys.yesstevemodel.geckolib3.core.snapshot.BoneTopLevelSnapshot;
 import com.elfmcys.yesstevemodel.geckolib3.core.controller.BoneTransformProvider;
 import com.elfmcys.yesstevemodel.geckolib3.core.util.TransitionVector3f;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.context.AnimationContext;
-import com.elfmcys.yesstevemodel.client.compat.simpleplanes.SimplePlanesCompat;
 import com.elfmcys.yesstevemodel.molang.runtime.ExpressionEvaluator;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceMap;
 import org.jetbrains.annotations.Nullable;
@@ -57,12 +55,6 @@ public class VehicleRotationController implements IAnimationController<GeckoVehi
 
     @Override
     public void process(AnimationEvent<GeckoVehicleEntity> event, ExpressionEvaluator<AnimationContext<?>> evaluator, boolean z) {
-        ImmersiveAirCraftCompat.getAircraftRotation(event).or(() -> {
-            return SimplePlanesCompat.getSimplePlanesRotation(event);
-        }).ifPresent(vector3f -> {
-            this.vehicleRotation = new TransitionVector3f(vector3f);
-            this.vehicleRotation.setPercentCompleted(0.0f);
-        });
     }
 
     @Override

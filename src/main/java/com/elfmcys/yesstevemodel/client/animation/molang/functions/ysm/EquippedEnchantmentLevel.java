@@ -1,6 +1,6 @@
 package com.elfmcys.yesstevemodel.client.animation.molang.functions.ysm;
 
-import com.elfmcys.yesstevemodel.client.compat.cosmeticarmorreworked.CosmeticArmorHelper;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.context.IContext;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.funciton.entity.LivingEntityFunction;
 import com.elfmcys.yesstevemodel.geckolib3.util.MolangUtils;
@@ -21,7 +21,7 @@ public class EquippedEnchantmentLevel extends LivingEntityFunction {
         if (slotType == null) {
             return null;
         }
-        ItemStack stack = CosmeticArmorHelper.getArmorItem(context.entity().entity(), slotType);
+        ItemStack stack = YsmClientCompat.getArmorItem(context.entity().entity(), slotType);
         if (stack.isEmpty()) {
             return 0;
         }

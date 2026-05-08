@@ -1,7 +1,7 @@
 package com.elfmcys.yesstevemodel.client.animation.condition;
 
-import com.elfmcys.yesstevemodel.client.compat.gun.tacz.ConditionTAC;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
 
 public class ConditionManager {
 
@@ -83,5 +83,17 @@ public class ConditionManager {
 
     public ConditionChair getChair() {
         return this.CHAIR;
+    }
+
+    public static final class ConditionTAC {
+        private ConditionTAC() {
+        }
+
+        public void addTest(String name) {
+        }
+
+        public String doTest(ItemStack itemStack, String name) {
+            return "";
+        }
     }
 }

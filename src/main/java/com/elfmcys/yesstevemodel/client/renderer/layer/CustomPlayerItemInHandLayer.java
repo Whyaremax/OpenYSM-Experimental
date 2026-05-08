@@ -1,6 +1,5 @@
 package com.elfmcys.yesstevemodel.client.renderer.layer;
 
-import com.elfmcys.yesstevemodel.client.compat.slashblade.SlashBladeRenderer;
 import com.elfmcys.yesstevemodel.client.compat.slashblade.SlashBladeCompat;
 import com.elfmcys.yesstevemodel.client.compat.gun.swarfare.SWarfareCompat;
 import com.elfmcys.yesstevemodel.client.entity.CustomPlayerEntity;
@@ -38,9 +37,7 @@ public class CustomPlayerItemInHandLayer extends GeoLayerRenderer<CustomPlayerEn
             poseStack.pushPose();
             boolean useExtraPlayer = entityLivingBaseIn.isRenderLayersFirst();
             if (!animatedGeoModel.rightHandBones().isEmpty()) {
-                if (SlashBladeCompat.isSlashBladeItem(mainHandItem)) {
-                    SlashBladeRenderer.renderOnEntity(entity, animatedGeoModel, poseStack, bufferSource, packedLightIn, mainHandItem, partialTick);
-                } else {
+                if (!SlashBladeCompat.isSlashBladeItem(mainHandItem)) {
                     TacCompat.handleGunSound(entity, mainHandItem);
                     renderItem(animatedGeoModel, entity, mainHandItem, ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, HumanoidArm.RIGHT, poseStack, bufferSource, packedLightIn);
                     if (useExtraPlayer && !mainHandItem.isEmpty() && (bufferSource instanceof BufferSourceAccessor)) {
@@ -50,9 +47,7 @@ public class CustomPlayerItemInHandLayer extends GeoLayerRenderer<CustomPlayerEn
                 }
             }
             if (!animatedGeoModel.leftHandBones().isEmpty()) {
-                if (SlashBladeCompat.isSlashBladeItem(offhandItem)) {
-                    SlashBladeRenderer.renderRightWaist(animatedGeoModel, poseStack, bufferSource, packedLightIn, offhandItem);
-                } else {
+                if (!SlashBladeCompat.isSlashBladeItem(offhandItem)) {
                     if (!SWarfareCompat.isGunItem(offhandItem)) {
                         renderItem(animatedGeoModel, entity, offhandItem, ItemDisplayContext.THIRD_PERSON_LEFT_HAND, HumanoidArm.LEFT, poseStack, bufferSource, packedLightIn);
                     }

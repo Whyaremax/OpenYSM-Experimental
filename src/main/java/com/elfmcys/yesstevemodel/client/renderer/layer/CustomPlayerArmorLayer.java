@@ -1,7 +1,6 @@
 package com.elfmcys.yesstevemodel.client.renderer.layer;
 
 import com.elfmcys.yesstevemodel.client.entity.CustomPlayerEntity;
-import com.elfmcys.yesstevemodel.client.compat.simplehats.SimpleHatsHelper;
 import com.elfmcys.yesstevemodel.geckolib3.geo.GeoLayerRenderer;
 import com.elfmcys.yesstevemodel.geckolib3.geo.animated.AnimatedGeoModel;
 import com.elfmcys.yesstevemodel.geckolib3.util.RenderUtils;
@@ -32,10 +31,6 @@ public class CustomPlayerArmorLayer extends GeoLayerRenderer<CustomPlayerEntity>
             ItemStack itemBySlot = player.getItemBySlot(EquipmentSlot.HEAD);
             if (!itemBySlot.isEmpty() && !isArmorItem(itemBySlot)) {
                 renderArmorPiece(poseStack, bufferSource, packedLightIn, model, player, itemBySlot);
-            }
-            ItemStack stack = SimpleHatsHelper.getHatItem(player);
-            if (stack != null && !stack.isEmpty()) {
-                renderArmorPiece(poseStack, bufferSource, packedLightIn, model, player, stack);
             }
         }
     }

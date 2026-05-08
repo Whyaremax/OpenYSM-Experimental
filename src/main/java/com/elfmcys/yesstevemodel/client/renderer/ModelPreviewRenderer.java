@@ -2,8 +2,7 @@ package com.elfmcys.yesstevemodel.client.renderer;
 
 import com.elfmcys.yesstevemodel.capability.PlayerCapabilityProvider;
 import com.elfmcys.yesstevemodel.capability.VehicleCapabilityProvider;
-import com.elfmcys.yesstevemodel.client.compat.firstperson.FirstPersonCompat;
-import com.elfmcys.yesstevemodel.client.compat.oculus.OculusCompat;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.client.compat.touhoulittlemaid.TouhouLittleMaidCompat;
 import com.elfmcys.yesstevemodel.client.animation.AnimationTracker;
 import com.elfmcys.yesstevemodel.client.entity.LivingAnimatable;
@@ -63,12 +62,12 @@ public final class ModelPreviewRenderer {
     }
 
     public static boolean isFirstPerson() {
-        return isFirstPersonMode || OculusCompat.isPBRActive() || FirstPersonCompat.isFirstPersonActive();
+        return isFirstPersonMode || YsmClientCompat.isPbrActive() || YsmClientCompat.isFirstPersonActive();
     }
 
     public static boolean isFirstPersonOnRenderThread() {
         RenderSystem.assertOnRenderThread();
-        return isFirstPersonMode && !FirstPersonCompat.isFirstPersonActive();
+        return isFirstPersonMode && !YsmClientCompat.isFirstPersonActive();
     }
 
     public static void renderVehicleModel(Entity entity, PoseStack poseStack, float partialTick) {

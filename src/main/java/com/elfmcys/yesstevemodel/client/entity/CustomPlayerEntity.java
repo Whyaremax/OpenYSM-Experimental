@@ -3,7 +3,7 @@ package com.elfmcys.yesstevemodel.client.entity;
 import com.elfmcys.yesstevemodel.geckolib3.core.controller.controllers.PlayerAnimationController;
 import com.elfmcys.yesstevemodel.client.animation.molang.MolangEventDispatcher;
 import com.elfmcys.yesstevemodel.client.model.ModelAssembly;
-import com.elfmcys.yesstevemodel.client.compat.oculus.OculusCompat;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.geckolib3.core.event.predicate.AnimationEvent;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.value.IValue;
 import com.elfmcys.yesstevemodel.geckolib3.core.enums.AnimationState;
@@ -62,7 +62,7 @@ public abstract class CustomPlayerEntity extends LivingAnimatable<Player> implem
 
     @Override
     public boolean shouldSkipAnimation(AnimationEvent<?> event) {
-        return event.isFirstPerson() || (!this.isLocalPlayer && OculusCompat.isPBRActive());
+        return event.isFirstPerson() || (!this.isLocalPlayer && YsmClientCompat.isPbrActive());
     }
 
     @Override

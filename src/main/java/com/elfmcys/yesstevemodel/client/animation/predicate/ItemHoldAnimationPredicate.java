@@ -2,7 +2,6 @@ package com.elfmcys.yesstevemodel.client.animation.predicate;
 
 import com.elfmcys.yesstevemodel.client.animation.IAnimationPredicate;
 import com.elfmcys.yesstevemodel.client.animation.condition.ConditionManager;
-import com.elfmcys.yesstevemodel.client.compat.ironsspellbooks.SpellbooksCompat;
 import com.elfmcys.yesstevemodel.client.compat.slashblade.SlashBladeCompat;
 import com.elfmcys.yesstevemodel.client.entity.LivingAnimatable;
 import com.elfmcys.yesstevemodel.geckolib3.core.builder.ILoopType;
@@ -21,10 +20,6 @@ public class ItemHoldAnimationPredicate implements IAnimationPredicate<LivingAni
         LivingEntity livingEntity = event.getAnimatable().getEntity();
         if (livingEntity == null || (event.getAnimatable() instanceof IPreviewAnimatable)) {
             return PlayState.STOP;
-        }
-        PlayState playState = SpellbooksCompat.resolvePlayState(event, livingEntity);
-        if (playState != null) {
-            return playState;
         }
         int i = event.getAnimatable().getModelAssembly().getModelData().getFormatVersion();
         if (!livingEntity.isSleeping() && SlashBladeCompat.isSlashBladeItem(livingEntity.getItemInHand(InteractionHand.MAIN_HAND))) {

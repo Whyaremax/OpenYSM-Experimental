@@ -1,23 +1,15 @@
 package com.elfmcys.yesstevemodel.mixin.plugin;
 
-import com.elfmcys.yesstevemodel.client.compat.parcool.ParcoolCompat;
 import com.elfmcys.yesstevemodel.util.obfuscate.Keep;
-import com.elfmcys.yesstevemodel.client.compat.create.CreateCompat;
-import com.google.common.collect.Lists;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 public class MixinTweaker implements IMixinConfigPlugin {
     public MixinTweaker() {
-        ParcoolCompat.init();
-        CreateCompat.init();
     }
 
     @Keep
@@ -40,25 +32,6 @@ public class MixinTweaker implements IMixinConfigPlugin {
 
     @Keep
     public List<String> getMixins() {
-        if (FMLEnvironment.dist == Dist.CLIENT) {
-            ArrayList<String> arrayListNewArrayList = Lists.newArrayList();
-            if (ParcoolCompat.isLoaded()) {
-                arrayListNewArrayList.add("client.parcool.AnimationAccessor");
-                arrayListNewArrayList.add("client.parcool.DodgeAnimatorAccessor");
-                arrayListNewArrayList.add("client.parcool.FlippingAnimatorAccessor");
-                arrayListNewArrayList.add("client.parcool.HorizontalWallRunAnimatorAccessor");
-                arrayListNewArrayList.add("client.parcool.RollAnimatorAccessor");
-                arrayListNewArrayList.add("client.parcool.SpeedVaultAnimatorAccessor");
-                arrayListNewArrayList.add("client.parcool.WallJumpAnimatorAccessor");
-            }
-            if (CreateCompat.isLoaded()) {
-                arrayListNewArrayList.add("client.create.PlayerSkyhookRendererAccessor");
-            }
-            if (arrayListNewArrayList.isEmpty()) {
-                return null;
-            }
-            return arrayListNewArrayList;
-        }
         return null;
     }
 
