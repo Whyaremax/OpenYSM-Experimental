@@ -36,14 +36,14 @@ public class TouhouMaidModelScreen extends PlayerModelScreen {
 
     @Override
     public PlayerTextureScreen createTextureScreen(PlayerModelScreen modelScreen, String str, ModelAssembly modelAssembly) {
-        return new TouhouMaidTextureScreen(modelScreen, str, Objects.requireNonNullElse(this.maid.getCapability(MaidCapabilityProvider.MAID_CAP).map((v0) -> {
+        return new TouhouMaidTextureScreen(modelScreen, str, Objects.requireNonNullElse(com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(this.maid, MaidCapabilityProvider.MAID_CAP).map((v0) -> {
             return v0.getModelAssembly();
         }).orElse(null), modelAssembly), this.maid);
     }
 
     @Override
     public ModelInfoScreen createModelInfoScreen(PlayerModelScreen modelScreen, ModelAssembly modelAssembly) {
-        return new ModelInfoScreen(modelScreen, Objects.requireNonNullElse(this.maid.getCapability(MaidCapabilityProvider.MAID_CAP).map((v0) -> {
+        return new ModelInfoScreen(modelScreen, Objects.requireNonNullElse(com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(this.maid, MaidCapabilityProvider.MAID_CAP).map((v0) -> {
             return v0.getModelAssembly();
         }).orElse(null), modelAssembly));
     }
@@ -54,7 +54,7 @@ public class TouhouMaidModelScreen extends PlayerModelScreen {
         RenderSystem.enableScissor((int) ((this.guiLeft + 5) * guiScale), (int) (Minecraft.getInstance().getWindow().getHeight() - ((this.guiTop + 200) * guiScale)), (int) (125.0d * guiScale), (int) (171.0d * guiScale));
         InventoryScreen.renderEntityInInventoryFollowsMouse(guiGraphics, this.guiLeft + 67, this.guiTop + 190, 70, (this.guiLeft + 67) - i, ((this.guiTop + 180) - 95) - i2, this.maid);
         RenderSystem.disableScissor();
-        this.maid.getCapability(MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(this.maid, MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
             List<FormattedCharSequence> listSplit = this.font.split(FormattedText.of(ClientModelManager.getModelContext(cap.getModelId()).map(it -> {
                 Metadata metadata2 = it.getModelData().getExtraInfo();
                 if (metadata2 != null) {

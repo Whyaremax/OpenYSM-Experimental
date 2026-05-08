@@ -27,7 +27,7 @@ public class TouhouMaidTextureButton extends TextureButton {
         this.maid.setIsYsmModel(true);
         this.maid.setOnGround(true);
         this.index = entityMaid.getId();
-        entityMaid.getCapability(MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entityMaid, MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
             this.textureId = cap.getModelId();
             ModelAssembly modelAssembly2 = cap.getModelAssembly();
             this.displayComponent = ComponentUtil.getDisplayName(modelAssembly2, this.textureId);

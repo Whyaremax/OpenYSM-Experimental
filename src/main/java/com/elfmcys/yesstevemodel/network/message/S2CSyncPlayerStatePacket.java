@@ -312,7 +312,7 @@ public class S2CSyncPlayerStatePacket {
     @OnlyIn(Dist.CLIENT)
     public static void handleCapability(Entity entity, S2CSyncPlayerStatePacket message) {
         if (entity instanceof Player) {
-            entity.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                 if ((message.flags & 2048) != 0) {
                     if (!StringUtils.isEmpty(message.modelSwitchId)) {
                         cap.requestModelSwitch(message.modelSwitchId);

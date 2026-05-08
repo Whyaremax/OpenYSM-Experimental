@@ -26,7 +26,7 @@ public class ReplacePlayerHandRenderEvent {
         if (!(player instanceof LocalPlayer localPlayer)) {
             return;
         }
-        localPlayer.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
             if (!cap.isModelActive()) {
                 return;
             }
@@ -35,7 +35,7 @@ public class ReplacePlayerHandRenderEvent {
             if (context == null || !hasArmBone(arm, context.getAnimationBundle().getArmModel())) {
                 return;
             }
-            RendererManager.getHandRenderer().renderHandItem(localPlayer, context, cap, arm, event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), Minecraft.getInstance().getPartialTick());
+            RendererManager.getHandRenderer().renderHandItem(localPlayer, context, cap, arm, event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), Minecraft.getInstance().getFrameTime());
             event.setCanceled(true);
         });
     }

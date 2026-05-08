@@ -48,7 +48,7 @@ public class S2CSyncStarModelsPacket {
     public static void handleCapability(S2CSyncStarModelsPacket message) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player != null) {
-            minecraft.player.getCapability(StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap -> cap.setStarModels(message.starModels));
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(minecraft.player, StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap -> cap.setStarModels(message.starModels));
         }
     }
 }

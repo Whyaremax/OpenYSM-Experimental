@@ -59,7 +59,7 @@ public class S2CExecuteMolangPacket {
         for (int i : message.entityIds) {
             Entity entity = minecraft.level.getEntity(i);
             if (entity instanceof Player) {
-                entity.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                     try {
                         cap.executeExpression(GeckoLibCache.parseSimpleExpression(message.expression), true, false, null);
                     } catch (ParseException e) {

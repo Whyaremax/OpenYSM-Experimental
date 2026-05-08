@@ -24,7 +24,7 @@ public class GunArmRenderEvent {
             return;
         }
         event.setCanceled(true);
-        player.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
             HumanoidArm arm = event.getArm();
             ModelAssembly modelAssembly = cap.getModelAssembly();
             if (modelAssembly == null || !hasCustomArmModel(arm, modelAssembly.getAnimationBundle().getArmModel())) {
@@ -34,7 +34,7 @@ public class GunArmRenderEvent {
             boolean zIsUseOldHandRender = event.isUseOldHandRender();
             GeoBone bone = event.getBone();
             MultiBufferSource currentBuffer = event.getCurrentBuffer();
-            float partialTick = Minecraft.getInstance().getPartialTick();
+            float partialTick = Minecraft.getInstance().getFrameTime();
             HandItemRenderer renderer = RendererManager.getHandRenderer();
             if (arm == HumanoidArm.LEFT) {
                 stack.translate(-0.0625f, 0.125f, 0.0f);

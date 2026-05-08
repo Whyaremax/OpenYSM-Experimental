@@ -7,30 +7,35 @@ import net.minecraftforge.event.entity.living.ShieldBlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.Map;
+import java.util.WeakHashMap;
+
 @Mod.EventBusSubscriber(modid = YesSteveModel.MOD_ID)
 public class ShieldBlockCooldownEvent {
 
     public static final String TAG_KEY = "ysm$shield_block_cooldown";
+    private static final Map<LivingEntity, Integer> COOLDOWNS = new WeakHashMap<>();
 
     @SubscribeEvent
     public static void onShieldBlock(ShieldBlockEvent event) {
-        event.getEntity().getPersistentData().putInt(TAG_KEY, 5);
+        COOLDOWNS.put(event.getEntity(), 5);
     }
 
     @SubscribeEvent
     public static void onLivingTick(LivingEvent.LivingTickEvent event) {
         LivingEntity entity = event.getEntity();
-        if (entity.getPersistentData().contains(TAG_KEY)) {
-            int i = entity.getPersistentData().getInt(TAG_KEY);
+        Integer cooldown = COOLDOWNS.get(entity);
+        if (cooldown != null) {
+            int i = cooldown.intValue();
             if (i > 0) {
-                entity.getPersistentData().putInt(TAG_KEY, i - 1);
+                COOLDOWNS.put(entity, i - 1);
             } else {
-                entity.getPersistentData().remove(TAG_KEY);
+                COOLDOWNS.remove(entity);
             }
         }
     }
 
     public static boolean isOnCooldown(LivingEntity livingEntity) {
-        return livingEntity.getPersistentData().contains(TAG_KEY);
+        return COOLDOWNS.containsKey(livingEntity);
     }
 }

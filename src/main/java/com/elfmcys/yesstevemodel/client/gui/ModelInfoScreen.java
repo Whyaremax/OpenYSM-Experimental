@@ -27,7 +27,7 @@ import java.util.*;
 
 public class ModelInfoScreen extends Screen {
 
-    private static final ResourceLocation DEFAULT_AVATAR = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "texture/default_avatar.png");
+    private static final ResourceLocation DEFAULT_AVATAR = new ResourceLocation(YesSteveModel.MOD_ID, "texture/default_avatar.png");
 
     private static final Map<String, Component> URL_LABELS = ImmutableMap.of("home", Component.translatable("gui.yes_steve_model.url.home"), "donate", Component.translatable("gui.yes_steve_model.url.donate"));
 
@@ -63,7 +63,7 @@ public class ModelInfoScreen extends Screen {
         for (int i = 0; i < authorInfo.size(); i++) {
             OuterFileTexture avatar = avatars.get(authorInfo.get(i).getName());
             if (avatar != null) {
-                textureManager.register(ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "avatars/" + i), avatar);
+                textureManager.register(new ResourceLocation(YesSteveModel.MOD_ID, "avatars/" + i), avatar);
                 this.textureList.add(UploadManager.getOrCreateLocatable(avatar, true));
             } else {
                 this.textureList.add(null);
@@ -117,17 +117,17 @@ public class ModelInfoScreen extends Screen {
             i3 += 25;
         }
         addRenderableWidget(new FlatColorButton(this.guiLeft + 310, i3, 85, 20, Component.translatable("gui.yes_steve_model.model.return"), button4 -> {
-            getMinecraft().setScreen(this.parentScreen);
+            this.minecraft.setScreen(this.parentScreen);
         }));
     }
 
     private void openUrl(@Nullable String str) {
         if (str != null && StringUtils.isNoneBlank(str)) {
-            getMinecraft().setScreen(new ConfirmLinkScreen(z -> {
+            this.minecraft.setScreen(new ConfirmLinkScreen(z -> {
                 if (z) {
                     Util.getPlatform().openUri(str);
                 }
-                getMinecraft().setScreen(this);
+                this.minecraft.setScreen(this);
             }, str, true));
         }
     }
@@ -150,7 +150,7 @@ public class ModelInfoScreen extends Screen {
             }
         }
         super.render(guiGraphics, i, i2, f);
-        this.renderables.stream().filter(renderable -> {
+        this.children().stream().filter(renderable -> {
             return renderable instanceof AuthorButton;
         }).forEach(renderable2 -> {
             ((AuthorButton) renderable2).refreshContactComponents(guiGraphics, this, i, i2);

@@ -37,7 +37,7 @@ public class ExtraAnimationKey {
             return;
         }
         for (int i = 0; i <= 7; i++) {
-            KeyMapping eventMapping = new KeyMapping(String.format("key.yes_steve_model.extra_animation.%d.desc", Integer.valueOf(i)), KeyConflictContext.IN_GAME, KeyModifier.NONE, InputConstants.Type.KEYSYM, -1, "key.category.yes_steve_model");
+            KeyMapping eventMapping = new KeyMapping(String.format("key.yes_steve_model.extra_animation.%d.desc", Integer.valueOf(i)), InputConstants.Type.KEYSYM, -1, "key.category.yes_steve_model");
             event.register(eventMapping);
             KEY_MAPPINGS.add(eventMapping);
         }
@@ -51,7 +51,7 @@ public class ExtraAnimationKey {
         LocalPlayer localPlayer = Minecraft.getInstance().player;
         for (KeyMapping eventMapping : KEY_MAPPINGS) {
             if (event.getAction() == 1 && InputUtil.isKeyPressed(event, eventMapping) && localPlayer != null && !AnimationLockEvent.isPlayerMoving(localPlayer)) {
-                localPlayer.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                     ModelAssembly modelAssembly = cap.getModelAssembly();
                     int index = KEY_MAPPINGS.indexOf(eventMapping);
                     ModelProperties modelProperties = modelAssembly.getModelData().getModelProperties();

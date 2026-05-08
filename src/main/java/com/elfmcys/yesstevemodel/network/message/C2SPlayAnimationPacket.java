@@ -75,7 +75,7 @@ public class C2SPlayAnimationPacket {
             return;
         }
 
-        sender.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelInfoCap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(sender, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelInfoCap -> {
             if (message.animationIndex == -1) {
                 modelInfoCap.stopAnimation(sender);
             } else {

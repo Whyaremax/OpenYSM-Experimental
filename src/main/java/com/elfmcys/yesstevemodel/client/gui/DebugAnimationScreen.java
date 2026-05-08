@@ -23,7 +23,7 @@ public class DebugAnimationScreen extends Screen {
         this.guiLeft = (this.width - 420) / 2;
         this.guiTop = (this.height - 235) / 2;
         addRenderableWidget(new FlatColorButton(this.guiLeft + 5, this.guiTop, 80, 18, Component.translatable("gui.yes_steve_model.model.return"), button -> {
-            getMinecraft().setScreen(this.parentScreen);
+            this.minecraft.setScreen(this.parentScreen);
         }));
     }
 

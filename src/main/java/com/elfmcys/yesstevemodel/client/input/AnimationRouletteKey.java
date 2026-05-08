@@ -21,9 +21,9 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber({Dist.CLIENT})
 public class AnimationRouletteKey {
 
-    public static final KeyMapping KEY_ROULETTE = new KeyMapping("key.yes_steve_model.animation_roulette.desc", KeyConflictContext.IN_GAME, KeyModifier.NONE, InputConstants.Type.KEYSYM, 90, "key.category.yes_steve_model");
+    public static final KeyMapping KEY_ROULETTE = new KeyMapping("key.yes_steve_model.animation_roulette.desc", InputConstants.Type.KEYSYM, 90, "key.category.yes_steve_model");
 
-    public static final KeyMapping KEY_LOCK = new KeyMapping("key.yes_steve_model.lock_roulette.desc", KeyConflictContext.IN_GAME, KeyModifier.ALT, InputConstants.Type.KEYSYM, 76, "key.category.yes_steve_model");
+    public static final KeyMapping KEY_LOCK = new KeyMapping("key.yes_steve_model.lock_roulette.desc", InputConstants.Type.KEYSYM, 76, "key.category.yes_steve_model");
 
     @SubscribeEvent
     public static void onKeyInput(InputEvent.Key event) {
@@ -32,7 +32,7 @@ public class AnimationRouletteKey {
                 if (TouhouLittleMaidCompat.isMaidChatAvailable()) {
                     TouhouLittleMaidCompat.openMaidChat();
                 } else if (Minecraft.getInstance().player != null) {
-                    Minecraft.getInstance().player.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+                    com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(Minecraft.getInstance().player, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                         String modelId = cap.getModelId();
                         ModelAssembly modelAssembly = cap.getModelAssembly();
                         if (modelAssembly != null && !modelAssembly.getModelData().getModelProperties().getExtraAnimation().isEmpty()) {

@@ -34,12 +34,12 @@ public class ConditionPassenger {
         }
         String strSubstring = name.substring(preSize);
         if (name.startsWith(this.idPre) && ResourceLocation.isValidResourceLocation(strSubstring)) {
-            this.idTest.add(ResourceLocation.parse(strSubstring));
+            this.idTest.add(new ResourceLocation(strSubstring));
         }
         if (!name.startsWith(this.tagPre) || !ResourceLocation.isValidResourceLocation(strSubstring) || (iTagManagerTags = ForgeRegistries.ENTITY_TYPES.tags()) == null) {
             return;
         }
-        this.tagTest.add(iTagManagerTags.createTagKey(ResourceLocation.parse(strSubstring)));
+        this.tagTest.add(iTagManagerTags.createTagKey(new ResourceLocation(strSubstring)));
     }
 
     public String doTest(LivingEntity entity) {

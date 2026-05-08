@@ -53,7 +53,7 @@ public class RenderFirstPlayerBackground {
             return;
         }
         currentFrameRendered = true;
-        player.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
             if (!cap.isModelActive()) {
                 return;
             }

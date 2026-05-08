@@ -20,7 +20,7 @@ public class MobEffectEvent {
         if (entity instanceof ServerPlayer serverPlayer) {
             if (event.getEffectInstance().getEffect() != null) {
                 MobEffectInstance effectInstance = event.getEffectInstance();
-                serverPlayer.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(serverPlayer, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
                     cap.getAnimSync().syncEffectAdded(serverPlayer, effectInstance.getEffect(), effectInstance.getAmplifier() + 1);
                 });
             }
@@ -35,7 +35,7 @@ public class MobEffectEvent {
         Entity entity = event.getEntity();
         if (entity instanceof ServerPlayer serverPlayer) {
             if (event.getEffect() != null) {
-                serverPlayer.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(serverPlayer, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
                     cap.getAnimSync().syncEffectRemoved(serverPlayer, event.getEffect());
                 });
             }
@@ -50,7 +50,7 @@ public class MobEffectEvent {
         Entity entity = event.getEntity();
         if (entity instanceof ServerPlayer serverPlayer) {
             if (event.getEffectInstance() != null && event.getEffectInstance().getEffect() != null) {
-                serverPlayer.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(serverPlayer, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
                     cap.getAnimSync().syncEffectRemoved(serverPlayer, event.getEffectInstance().getEffect());
                 });
             }

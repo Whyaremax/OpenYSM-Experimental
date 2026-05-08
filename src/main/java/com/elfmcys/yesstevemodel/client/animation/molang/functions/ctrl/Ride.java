@@ -59,7 +59,7 @@ public class Ride extends LivingEntityFunction {
             return strSubstring.equals(key.toString()) ? 1 : 0;
         }
         if (id.startsWith(PREFIX_ITEM_TAG) && (iTagManagerTags = ForgeRegistries.ENTITY_TYPES.tags()) != null) {
-            return entityType.is(iTagManagerTags.createTagKey(ResourceLocation.parse(strSubstring))) ? 1 : 0;
+            return entityType.is(iTagManagerTags.createTagKey(new ResourceLocation(strSubstring))) ? 1 : 0;
         }
         return 0;
     }

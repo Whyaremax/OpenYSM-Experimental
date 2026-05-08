@@ -22,15 +22,15 @@ import java.util.List;
 @OnlyIn(Dist.CLIENT)
 public class SlashBladeRenderer {
 
-    private static final ResourceLocation BLADE_OBJ = ResourceLocation.fromNamespaceAndPath("slashblade", "model/blade.obj");
+    private static final ResourceLocation BLADE_OBJ = new ResourceLocation("slashblade", "model/blade.obj");
 
-    private static final ResourceLocation BLADE_TEXTURE = ResourceLocation.fromNamespaceAndPath("slashblade", "model/blade.png");
+    private static final ResourceLocation BLADE_TEXTURE = new ResourceLocation("slashblade", "model/blade.png");
 
     public static void renderBladeOnly(PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, ItemStack stack) {
         if (stack.isEmpty()) {
             return;
         }
-        stack.getCapability(CapabilitySlashBlade.BLADESTATE).ifPresent(bladeState -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(stack, CapabilitySlashBlade.BLADESTATE).ifPresent(bladeState -> {
             String str;
             ResourceLocation resourceLocation = bladeState.getTexture().orElse(BLADE_TEXTURE);
             WavefrontObject model = BladeModelManager.getInstance().getModel(bladeState.getModel().orElse(BLADE_OBJ));
@@ -57,7 +57,7 @@ public class SlashBladeRenderer {
             if (bladeBones.isEmpty() || sheathBones.isEmpty() || leftWaistBones.isEmpty()) {
                 renderBladeOnWaist(entity, model, poseStack, bufferSource, packedLight, stack, partialTick, leftWaistBones);
             } else {
-                stack.getCapability(CapabilitySlashBlade.BLADESTATE).ifPresent(bladeState -> renderBladeWithBones(bladeState, poseStack, bufferSource, packedLight, stack, leftWaistBones, bladeBones, sheathBones));
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(stack, CapabilitySlashBlade.BLADESTATE).ifPresent(bladeState -> renderBladeWithBones(bladeState, poseStack, bufferSource, packedLight, stack, leftWaistBones, bladeBones, sheathBones));
             }
         }
     }
@@ -133,7 +133,7 @@ public class SlashBladeRenderer {
             return;
         }
 
-        stack.getCapability(CapabilitySlashBlade.BLADESTATE).ifPresent(iSlashBladeState -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(stack, CapabilitySlashBlade.BLADESTATE).ifPresent(iSlashBladeState -> {
             String partName;
             ResourceLocation resourceLocation = iSlashBladeState.getTexture().orElse(BLADE_TEXTURE);
             WavefrontObject model = BladeModelManager.getInstance().getModel(iSlashBladeState.getModel().orElse(BLADE_OBJ));

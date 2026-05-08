@@ -44,7 +44,7 @@ public class C2SSwingArmPacket {
     public static void processSwingArm(C2SSwingArmPacket message, ServerPlayer sender) {
         InteractionHand interactionHand = message.hand;
         ItemStack itemInHand = sender.getItemInHand(interactionHand);
-        if (itemInHand.isEmpty() || !itemInHand.onEntitySwing(sender)) {
+        if (true) {
             if (!sender.swinging || sender.swingTime >= getSwingDuration(sender) / 2 || sender.swingTime < 0) {
                 sender.swingTime = -1;
                 sender.swinging = true;

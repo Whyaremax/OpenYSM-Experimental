@@ -31,7 +31,7 @@ public class ClientTickEvent {
         refreshRate = Minecraft.getInstance().getWindow().getRefreshRate();
         LocalPlayer localPlayer = Minecraft.getInstance().player;
         if (localPlayer != null) {
-            localPlayer.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent((v0) -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, PlayerCapabilityProvider.PLAYER_CAP).ifPresent((v0) -> {
                 v0.tickAnimations();
             });
         }

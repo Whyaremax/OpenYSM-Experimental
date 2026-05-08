@@ -3,9 +3,13 @@ package com.elfmcys.yesstevemodel;
 import com.elfmcys.yesstevemodel.config.GeneralConfig;
 import com.elfmcys.yesstevemodel.config.ModSoundEvents;
 import com.elfmcys.yesstevemodel.config.ServerConfig;
+import com.elfmcys.yesstevemodel.event.CommonEvent;
+import com.elfmcys.yesstevemodel.event.YsmFabricLifecycle;
 import com.elfmcys.yesstevemodel.util.obfuscate.Keep;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.api.ModInitializer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
@@ -13,7 +17,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.ModLoadingWarning;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -29,8 +32,7 @@ import java.io.IOException;
  * 默认模型应该就在模组架加载的时候就预加载了
  * 其它模型统统都是进入世界后加载
  */
-@Mod(YesSteveModel.MOD_ID)
-public class YesSteveModel {
+public class YesSteveModel implements ModInitializer, ClientModInitializer {
 
     public static final String MOD_ID = "yes_steve_model";
 
@@ -38,12 +40,26 @@ public class YesSteveModel {
 
     public static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
-    public YesSteveModel() throws IOException {
-        NativeLibLoader.init();
-        if (!NativeLibLoader.isAvailable()) {
-            LOGGER.error(getErrorMessage());
-        } else {
+    @Override
+    public void onInitialize() {
+        try {
+            NativeLibLoader.init();
             initConfig();
+            if (!NativeLibLoader.isAvailable()) {
+                LOGGER.error(getErrorMessage());
+            } else {
+                CommonEvent.commonInit();
+                YsmFabricLifecycle.registerCommon();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void onInitializeClient() {
+        if (NativeLibLoader.isAvailable()) {
+            YsmFabricLifecycle.registerClient();
         }
     }
 

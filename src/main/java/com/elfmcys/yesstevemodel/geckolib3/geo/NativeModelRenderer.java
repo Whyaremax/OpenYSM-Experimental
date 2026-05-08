@@ -463,32 +463,25 @@ public class NativeModelRenderer {
         }
         if (vertexCount == 0) return useDirectMemoryTransfer;
 
-        if (useDirectMemoryTransfer) {
-            BufferBuilder builder = (BufferBuilder) vertexConsumer;
-            outBuffer.position(0);
-            outBuffer.limit(vertexCount * 36);
-            builder.putBulkData(outBuffer);
-            outBuffer.clear();
-        } else {
-            long address = MemoryUtil.memAddress(outBuffer);
-            for (int i = 0; i < vertexCount; i++) {
-                long ptr = address + (i * 14L * 4L);
-                float vx = MemoryUtil.memGetFloat(ptr);
-                float vy = MemoryUtil.memGetFloat(ptr + 4);
-                float vz = MemoryUtil.memGetFloat(ptr + 8);
-                float vr = MemoryUtil.memGetFloat(ptr + 12);
-                float vg = MemoryUtil.memGetFloat(ptr + 16);
-                float vb = MemoryUtil.memGetFloat(ptr + 20);
-                float va = MemoryUtil.memGetFloat(ptr + 24);
-                float u = MemoryUtil.memGetFloat(ptr + 28);
-                float v = MemoryUtil.memGetFloat(ptr + 32);
-                int overlay = MemoryUtil.memGetInt(ptr + 36);
-                int light = MemoryUtil.memGetInt(ptr + 40);
-                float nx = MemoryUtil.memGetFloat(ptr + 44);
-                float ny = MemoryUtil.memGetFloat(ptr + 48);
-                float nz = MemoryUtil.memGetFloat(ptr + 52);
-                vertexConsumer.vertex(vx, vy, vz, vr, vg, vb, va, u, v, overlay, light, nx, ny, nz);
-            }
+        useDirectMemoryTransfer = false;
+        long address = MemoryUtil.memAddress(outBuffer);
+        for (int i = 0; i < vertexCount; i++) {
+            long ptr = address + (i * 14L * 4L);
+            float vx = MemoryUtil.memGetFloat(ptr);
+            float vy = MemoryUtil.memGetFloat(ptr + 4);
+            float vz = MemoryUtil.memGetFloat(ptr + 8);
+            float vr = MemoryUtil.memGetFloat(ptr + 12);
+            float vg = MemoryUtil.memGetFloat(ptr + 16);
+            float vb = MemoryUtil.memGetFloat(ptr + 20);
+            float va = MemoryUtil.memGetFloat(ptr + 24);
+            float u = MemoryUtil.memGetFloat(ptr + 28);
+            float v = MemoryUtil.memGetFloat(ptr + 32);
+            int overlay = MemoryUtil.memGetInt(ptr + 36);
+            int light = MemoryUtil.memGetInt(ptr + 40);
+            float nx = MemoryUtil.memGetFloat(ptr + 44);
+            float ny = MemoryUtil.memGetFloat(ptr + 48);
+            float nz = MemoryUtil.memGetFloat(ptr + 52);
+            vertexConsumer.vertex(vx, vy, vz, vr, vg, vb, va, u, v, overlay, light, nx, ny, nz);
         }
 
         return useDirectMemoryTransfer;

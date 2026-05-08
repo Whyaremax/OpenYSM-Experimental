@@ -55,7 +55,7 @@ public class MaidInteractionEvent {
     }
 
     private void applyModelToMaid(Player player, CompoundTag compoundTag) {
-        player.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
             String str = cap.getModelId();
             String str2 = cap.getSelectTexture();
             compoundTag.putBoolean("IsYsmModel", true);

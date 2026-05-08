@@ -26,7 +26,7 @@ public class ExtraPlayerConfigScreen extends Screen {
         int i = (this.width - 420) / 2;
         int i2 = (this.height - 265) / 2;
         addRenderableWidget(new FlatColorButton(i + 5, i2 + 2, 80, 18, Component.translatable("gui.yes_steve_model.model.return"), button -> {
-            getMinecraft().setScreen(this.parentScreen);
+            this.minecraft.setScreen(this.parentScreen);
         }));
         addRenderableWidget(new ForgeSlider(i + 5, i2 + 24, 320, 18, Component.translatable("gui.yes_steve_model.config.sound_volume"), Component.literal("%"), 0.0d, 100.0d, GeneralConfig.SOUND_VOLUME.get().doubleValue(), true) {
             public void applyValue() {

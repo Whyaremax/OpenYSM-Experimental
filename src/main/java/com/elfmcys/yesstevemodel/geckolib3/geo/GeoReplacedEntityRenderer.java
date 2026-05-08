@@ -99,7 +99,7 @@ public abstract class GeoReplacedEntityRenderer<TEntity extends LivingEntity, T 
             }
             setupRotations(entity, poseStack, modelData.lerpedAge, modelData.lerpBodyRot, partialTick);
             if (t.getEntity().getVehicle() != null) {
-                t.getEntity().getVehicle().getCapability(VehicleCapabilityProvider.VEHICLE_CAP).ifPresent(cap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(t.getEntity().getVehicle(), VehicleCapabilityProvider.VEHICLE_CAP).ifPresent(cap -> {
                     Vector3f vector3f = cap.getExpressionOffset();
                     if (vector3f != null) {
                         poseStack.mulPose(new Quaternionf().rotateZYX(vector3f.z, 0.0f, vector3f.x).invert());

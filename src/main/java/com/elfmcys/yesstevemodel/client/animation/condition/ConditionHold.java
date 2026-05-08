@@ -64,14 +64,14 @@ public class ConditionHold {
         }
         String strSubstring = name.substring(this.preSize);
         if (name.startsWith(this.idPre) && ResourceLocation.isValidResourceLocation(strSubstring)) {
-            this.idTest.add(ResourceLocation.parse(strSubstring));
+            this.idTest.add(new ResourceLocation(strSubstring));
         }
         if (name.startsWith(this.tagPre) && ResourceLocation.isValidResourceLocation(strSubstring)) {
             ITagManager<Item> iTagManagerTags = ForgeRegistries.ITEMS.tags();
             if (iTagManagerTags == null) {
                 return;
             }
-            this.tagTest.add(iTagManagerTags.createTagKey(ResourceLocation.parse(strSubstring)));
+            this.tagTest.add(iTagManagerTags.createTagKey(new ResourceLocation(strSubstring)));
         }
         if (!name.startsWith(this.extraPre) || strSubstring.equals(UseAnim.NONE.name().toLowerCase(Locale.US))) {
             return;

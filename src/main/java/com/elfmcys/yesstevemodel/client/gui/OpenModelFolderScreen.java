@@ -24,7 +24,7 @@ public class OpenModelFolderScreen extends Screen {
             Util.getPlatform().openFile(ServerModelManager.CUSTOM.toFile());
         }).bounds(i, i2, 150, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.yes_steve_model.model.return"), button2 -> {
-            getMinecraft().setScreen(this.parentScreen);
+            this.minecraft.setScreen(this.parentScreen);
         }).bounds(i + 160, i2, 150, 20).build());
     }
 

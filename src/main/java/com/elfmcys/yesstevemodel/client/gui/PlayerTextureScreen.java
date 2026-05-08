@@ -138,7 +138,7 @@ public class PlayerTextureScreen extends Screen {
             this.animationCurrentPage = 0;
         }
         addRenderableWidget(new FlatColorButton(this.guiLeft + 5, this.guiTop, 80, 18, Component.translatable("gui.yes_steve_model.model.return"), button -> {
-            getMinecraft().setScreen(this.parentScreen);
+            this.minecraft.setScreen(this.parentScreen);
         }));
         addRenderableWidget(new IconButton(this.guiLeft + 281, this.guiTop + 2, 16, 16, 64, 16, button2 -> {
             this.currentAnimation = "idle";
@@ -205,7 +205,7 @@ public class PlayerTextureScreen extends Screen {
     }
 
     public void render(GuiGraphics guiGraphics, int i, int i2, float f) {
-        if (getMinecraft().player == null) {
+        if (this.minecraft.player == null) {
             return;
         }
         renderBackground(guiGraphics);
@@ -230,7 +230,7 @@ public class PlayerTextureScreen extends Screen {
         String str2 = String.format("%d/%d", this.animationCurrentPage + 1, this.animationMaxPage + 1);
         guiGraphics.drawString(this.font, str2, this.guiLeft + 5 + ((80 - this.font.width(str2)) / 2), this.guiTop + 218, 15986656);
         super.render(guiGraphics, i, i2, f);
-        this.renderables.stream().filter(renderable -> {
+        this.children().stream().filter(renderable -> {
             return renderable instanceof FlatColorButton;
         }).forEach(renderable2 -> {
             ((FlatColorButton) renderable2).renderTooltip(guiGraphics, this, i, i2);
@@ -239,7 +239,7 @@ public class PlayerTextureScreen extends Screen {
 
     public void renderTexturePreview(GuiGraphics guiGraphics, int i, int i2, int i3, int i4, float f) {
         RenderSystem.enableScissor(i, i2, i3, i4);
-        this.minecraft.player.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(this.minecraft.player, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
             this.modelHolder.initModelWithTexture(this.modelId, cap.getCurrentTextureName());
             ModelPreviewRenderer.renderEntityPreview(this.guiLeft + 149.5f + 40.0f + this.offsetX, this.guiTop + 117.5f + 80.0f + this.offsetY, this.zoom, this.pitch, this.yaw, f, this.modelHolder, RendererManager.getPlayerRenderer(), this.showGround);
         });
@@ -284,12 +284,12 @@ public class PlayerTextureScreen extends Screen {
     private boolean scrollTexturePage(double d) {
         if (d > 0.0d && this.textureCurrentPage > 0) {
             this.textureCurrentPage--;
-            getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
             init();
         }
         if (d < 0.0d && this.textureCurrentPage < this.textureMaxPage) {
             this.textureCurrentPage++;
-            getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
             init();
             return true;
         }
@@ -299,12 +299,12 @@ public class PlayerTextureScreen extends Screen {
     private boolean scrollAnimationPage(double d) {
         if (d > 0.0d && this.animationCurrentPage > 0) {
             this.animationCurrentPage--;
-            getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
             init();
         }
         if (d < 0.0d && this.animationCurrentPage < this.animationMaxPage) {
             this.animationCurrentPage++;
-            getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
             init();
             return true;
         }

@@ -59,7 +59,7 @@ public class AnimationDebugOverlay {
     public static boolean tryUpdateFromLocalPlayer() {
         LocalPlayer localPlayer = Minecraft.getInstance().player;
         if (localPlayer != null) {
-            localPlayer.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent((cap) -> setActiveModel(cap));
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, PlayerCapabilityProvider.PLAYER_CAP).ifPresent((cap) -> setActiveModel(cap));
             return true;
         }
         clearActiveModel();
@@ -69,13 +69,13 @@ public class AnimationDebugOverlay {
     public static boolean tryUpdateFromEntity(Entity entity) {
         LazyOptional<?> capability;
         if (entity instanceof Player) {
-            capability = entity.getCapability(PlayerCapabilityProvider.PLAYER_CAP);
+            capability = com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, PlayerCapabilityProvider.PLAYER_CAP);
         } else if (TouhouLittleMaidCompat.isMaidEntity(entity)) {
-            capability = entity.getCapability(MaidCapabilityProvider.MAID_CAP);
+            capability = com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, MaidCapabilityProvider.MAID_CAP);
         } else if (entity instanceof Projectile) {
-            capability = entity.getCapability(ProjectileCapabilityProvider.PROJECTILE_CAP);
+            capability = com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, ProjectileCapabilityProvider.PROJECTILE_CAP);
         } else {
-            capability = entity.getCapability(VehicleCapabilityProvider.VEHICLE_CAP);
+            capability = com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, VehicleCapabilityProvider.VEHICLE_CAP);
         }
         return capability.map(cap -> {
             setActiveModel((GeoEntity<?>) cap);

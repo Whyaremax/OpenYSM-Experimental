@@ -22,7 +22,7 @@ import java.util.List;
 
 public class PackIconButton extends Button {
 
-    private static final ResourceLocation location = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "texture/default_pack_icon.png");
+    private static final ResourceLocation location = new ResourceLocation(YesSteveModel.MOD_ID, "texture/default_pack_icon.png");
 
     private final ModelPackData packData;
 
@@ -36,7 +36,7 @@ public class PackIconButton extends Button {
         Font font = minecraft.font;
         guiGraphics.fillGradient(getX(), getY(), getX() + this.width, getY() + this.height, -6598176, -6598176);
         ResourceLocation location = FileTypeUtil.getPackIconLocation(this.packData.getPath());
-        AbstractTexture texture = minecraft.textureManager.getTexture(location, MissingTextureAtlasSprite.getTexture());
+        AbstractTexture texture = minecraft.getTextureManager().getTexture(location, MissingTextureAtlasSprite.getTexture());
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         if (texture == MissingTextureAtlasSprite.getTexture()) {
@@ -69,7 +69,7 @@ public class PackIconButton extends Button {
         if (isHovered()) {
             guiGraphics.pose().pushPose();
             guiGraphics.pose().translate(0.0f, 0.0f, 4000.0f);
-            guiGraphics.renderComponentTooltip(screen.getMinecraft().font, listSingletonList, i, i2);
+            guiGraphics.renderComponentTooltip(net.minecraft.client.Minecraft.getInstance().font, listSingletonList, i, i2);
             guiGraphics.pose().popPose();
         }
     }

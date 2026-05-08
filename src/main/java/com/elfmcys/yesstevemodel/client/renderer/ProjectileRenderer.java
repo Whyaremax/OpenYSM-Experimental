@@ -20,7 +20,7 @@ public class ProjectileRenderer extends AbstractProjectileRenderer<Projectile, G
         if (Minecraft.getInstance().player == null || projectile.isInvisibleTo(Minecraft.getInstance().player)) {
             return;
         }
-        projectile.getCapability(ProjectileCapabilityProvider.PROJECTILE_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(projectile, ProjectileCapabilityProvider.PROJECTILE_CAP).ifPresent(cap -> {
             cap.tickModel();
             render(cap, entityYaw, partialTick, poseStack, bufferSource, packedLight);
         });
@@ -28,6 +28,6 @@ public class ProjectileRenderer extends AbstractProjectileRenderer<Projectile, G
 
     @NotNull
     public ResourceLocation getTextureLocation(Projectile projectile) {
-        return projectile.getCapability(ProjectileCapabilityProvider.PROJECTILE_CAP).map((cap) -> cap.getTextureLocation()).orElse(MissingTextureAtlasSprite.getLocation());
+        return com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(projectile, ProjectileCapabilityProvider.PROJECTILE_CAP).map((cap) -> cap.getTextureLocation()).orElse(MissingTextureAtlasSprite.getLocation());
     }
 }

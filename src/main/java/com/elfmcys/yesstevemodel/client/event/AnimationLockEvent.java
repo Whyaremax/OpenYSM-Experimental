@@ -30,7 +30,7 @@ public class AnimationLockEvent {
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         LocalPlayer localPlayer;
         if (YesSteveModel.isAvailable() && event.phase == TickEvent.Phase.END && !animationLocked && (localPlayer = Minecraft.getInstance().player) != null && isPlayerMoving(localPlayer)) {
-            localPlayer.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                 if (cap.isModelSwitching()) {
                     cap.clearModelSwitch();
                     if (NetworkHandler.isClientConnected()) {

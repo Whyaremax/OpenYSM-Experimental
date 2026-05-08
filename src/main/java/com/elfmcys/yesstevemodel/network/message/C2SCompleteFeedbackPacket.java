@@ -37,10 +37,10 @@ public record C2SCompleteFeedbackPacket(FeedbackData feedbackData) {
         if (TouhouMaidCompat.isMaidEntity(entity)) {
             TouhouMaidCompat.applyFeedback(entity, message.feedbackData);
         } else if (entity instanceof ServerPlayer serverPlayer) {
-            serverPlayer.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(serverPlayer, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
                 cap.applyFeedback(serverPlayer, message.feedbackData);
                 if (serverPlayer.getVehicle() != null && serverPlayer.getVehicle().getFirstPassenger() == serverPlayer) {
-                    serverPlayer.getVehicle().getCapability(VehicleModelCapabilityProvider.VEHICLE_MODEL_CAP).ifPresent(vehicleCap -> {
+                    com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(serverPlayer.getVehicle(), VehicleModelCapabilityProvider.VEHICLE_MODEL_CAP).ifPresent(vehicleCap -> {
                         cap.getMolangVars().ifPresent(map -> vehicleCap.setModel(cap.getModelId(), map));
                     });
                 }

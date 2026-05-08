@@ -28,7 +28,7 @@ public class TouhouMaidTextureScreen extends PlayerTextureScreen {
     @Override
     public void renderTexturePreview(GuiGraphics guiGraphics, int i, int i2, int i3, int i4, float f) {
         RenderSystem.enableScissor(i, i2, i3, i4);
-        this.maid.getCapability(MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(this.maid, MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
             this.modelHolder.initModelWithTexture(cap.getModelId(), cap.getCurrentTextureName());
             ModelPreviewRenderer.renderEntityPreview(this.guiLeft + 149.5f + 40.0f + this.offsetX, this.guiTop + 117.5f + 80.0f + this.offsetY, this.zoom, this.pitch, this.yaw, f, this.modelHolder, RendererManager.getPlayerRenderer(), this.showGround);
         });

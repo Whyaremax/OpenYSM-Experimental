@@ -41,7 +41,7 @@ public class S2CSyncAnimationExpressionPacket {
         NetworkEvent.Context context = contextSupplier.get();
         if (context.getDirection().getReceptionSide().isClient()) {
             context.enqueueWork(() -> {
-                Minecraft.getInstance().level.getEntity(message.entityId).getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> cap.executeAnimationExpression(message.floatData));
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(Minecraft.getInstance().level.getEntity(message.entityId), PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> cap.executeAnimationExpression(message.floatData));
             });
         }
         context.setPacketHandled(true);

@@ -42,7 +42,7 @@ public class CustomPlayerRenderer extends GeoReplacedEntityRenderer<Player, Cust
 
     public void render(Player player, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
         PlayerCapability capability;
-        if (SWarfareCompat.isPlayerAiming(player) || (capability = player.getCapability(PlayerCapabilityProvider.PLAYER_CAP).orElse(null)) == null) {
+        if (SWarfareCompat.isPlayerAiming(player) || (capability = com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, PlayerCapabilityProvider.PLAYER_CAP).orElse(null)) == null) {
             return;
         }
         capability.tickModel();
@@ -87,7 +87,7 @@ public class CustomPlayerRenderer extends GeoReplacedEntityRenderer<Player, Cust
 
     @NotNull
     public ResourceLocation getTextureLocation(Player player) {
-        return this.currentTexture == null ? player.getCapability(PlayerCapabilityProvider.PLAYER_CAP).map((cap) -> cap.getTextureLocation()).orElse(MissingTextureAtlasSprite.getLocation()) : this.currentTexture;
+        return this.currentTexture == null ? com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, PlayerCapabilityProvider.PLAYER_CAP).map((cap) -> cap.getTextureLocation()).orElse(MissingTextureAtlasSprite.getLocation()) : this.currentTexture;
     }
 
     public void renderNameTag(Player player, Component component, PoseStack poseStack, MultiBufferSource multiBufferSource, int i) {

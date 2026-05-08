@@ -54,7 +54,7 @@ public class S2CSetModelAndTexturePacket {
 
     @OnlyIn(Dist.CLIENT)
     public static void applyOnClient(Entity entity, S2CSetModelAndTexturePacket other) {
-        entity.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
             cap.initModelWithTexture(other.modelId, other.textureId);
             cap.setForceDisabled(other.disabled);
             S2CSyncPlayerStatePacket.handleCapability(entity, other.entityModelSync);

@@ -13,13 +13,13 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.FishingHook;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.ToolActions;
 import org.spongepowered.asm.mixin.Unique;
 
 public class CustomFishingHookRenderer {
     public static boolean tryRenderCustomHook(FishingHook fishingHook, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
-        return fishingHook.getCapability(ProjectileCapabilityProvider.PROJECTILE_CAP).map(cap -> {
+        return com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(fishingHook, ProjectileCapabilityProvider.PROJECTILE_CAP).map(cap -> {
             if (cap.isModelInitialized() && cap.isModelReady()) {
                 fishingHook.setXRot(0.0f);
                 fishingHook.xRotO = 0.0f;
@@ -38,7 +38,7 @@ public class CustomFishingHookRenderer {
 
     private static void renderFishingLine(FishingHook fishingHook, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, Player player) {
         int hand = player.getMainArm() == HumanoidArm.RIGHT ? 1 : -1;
-        if (!player.getMainHandItem().canPerformAction(ToolActions.FISHING_ROD_CAST)) {
+        if (!player.getMainHandItem().is(Items.FISHING_ROD)) {
             hand = -hand;
         }
         float swingProgressSqrt = Mth.sin(Mth.sqrt(player.getAttackAnim(partialTick)) * 3.1415927f);

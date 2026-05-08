@@ -45,7 +45,7 @@ public class ConditionArmor {
             if (!ResourceLocation.isValidResourceLocation(strGroup)) {
                 return;
             } else {
-                this.idTest.computeIfAbsent(slot2, obj -> new ObjectOpenHashSet<>()).add(ResourceLocation.parse(strGroup));
+                this.idTest.computeIfAbsent(slot2, obj -> new ObjectOpenHashSet<>()).add(new ResourceLocation(strGroup));
             }
         }
         Matcher matcher2 = TAG_PRE_REG.matcher(str);
@@ -56,7 +56,7 @@ public class ConditionArmor {
         if (!ResourceLocation.isValidResourceLocation(strGroup2) || (iTagManagerTags = ForgeRegistries.ITEMS.tags()) == null) {
             return;
         }
-        this.tagTest.computeIfAbsent(slot, obj2 -> new ReferenceArrayList<>()).add(iTagManagerTags.createTagKey(ResourceLocation.parse(strGroup2)));
+        this.tagTest.computeIfAbsent(slot, obj2 -> new ReferenceArrayList<>()).add(iTagManagerTags.createTagKey(new ResourceLocation(strGroup2)));
     }
 
     public String doTest(LivingEntity entity, EquipmentSlot slot) {
