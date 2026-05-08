@@ -2,10 +2,10 @@ package com.elfmcys.yesstevemodel;
 
 import com.sun.jna.NativeLibrary;
 import com.sun.jna.Platform;
+import com.elfmcys.yesstevemodel.geckolib3.geo.render.built.NativeModelCache;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.StringUtil;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.ModLoadingStage;
 import net.minecraftforge.fml.ModLoadingWarning;
 import net.minecraftforge.fml.loading.FMLPaths;
@@ -20,6 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -28,6 +30,10 @@ public final class NativeLibLoader {
     private static boolean available = false;
     private static boolean loaded = false;
     private static boolean isAndroid = false;
+    private static String loadedPlatform = "none";
+    private static String loadedPath = "";
+    private static String nativeBackend = "none";
+    private static String fallbackReason = "native library not loaded";
     private static ErrorState lastError = null;
 
     private enum TargetPlatform {
@@ -64,8 +70,11 @@ public final class NativeLibLoader {
 
         if (path != null && loadNativeLib(path)) {
             loaded = true;
+            loadedPath = path;
+            runNativeSelfTest();
         }
         available = true;
+        logStatus();
     }
 
     private static @Nullable String extractAndGetLibPath() throws IOException {
@@ -73,6 +82,7 @@ public final class NativeLibLoader {
         if (platform == null) return null;
 
         Path storageDir = getDefaultStorageDir(platform);
+        loadedPlatform = platform.resDir;
         if (platform == TargetPlatform.ANDROID_ARM64) {
             String androidRuntime = System.getenv("MOD_ANDROID_RUNTIME");
             if (androidRuntime == null) {
@@ -131,12 +141,53 @@ public final class NativeLibLoader {
     private static boolean loadNativeLib(String path) {
         try {
             System.load(path);
+            fallbackReason = "";
             return true;
         } catch (Throwable th) {
             YesSteveModel.LOGGER.error("Failed to load native lib: " + path, th);
             setUnsatisfiedRuntimeError(th.getMessage());
+            fallbackReason = "native load failed: " + th.getMessage();
             return false;
         }
+    }
+
+    private static void runNativeSelfTest() {
+        try {
+            int abiVersion = NativeModelCache.nGetNativeAbiVersion();
+            nativeBackend = NativeModelCache.nGetNativeBackendName();
+            ByteBuffer directBuffer = ByteBuffer.allocateDirect(64).order(ByteOrder.nativeOrder());
+            if (abiVersion != 1) {
+                disableNativeRenderer("native ABI mismatch: " + abiVersion, null);
+                return;
+            }
+            if (!NativeModelCache.nSelfTest(directBuffer)) {
+                disableNativeRenderer("native self-test failed", null);
+            }
+        } catch (Throwable th) {
+            disableNativeRenderer("native self-test error: " + th.getMessage(), th);
+        }
+    }
+
+    public static void disableNativeRenderer(String reason, @Nullable Throwable throwable) {
+        loaded = false;
+        fallbackReason = reason != null ? reason : "native renderer disabled";
+        if (throwable != null) {
+            YesSteveModel.LOGGER.error("[YSM] Native acceleration disabled: {}", fallbackReason, throwable);
+        } else {
+            YesSteveModel.LOGGER.warn("[YSM] Native acceleration disabled: {}", fallbackReason);
+        }
+    }
+
+    private static void logStatus() {
+        YesSteveModel.LOGGER.info(
+                "[YSM] Native status: available={}, loaded={}, platform={}, backend={}, path={}, fallback={}",
+                available,
+                loaded,
+                loadedPlatform,
+                nativeBackend,
+                loadedPath.isBlank() ? "none" : loadedPath,
+                fallbackReason.isBlank() ? "none" : fallbackReason
+        );
     }
 
     private static void writeIfChanged(String path, byte[] data) throws IOException {
@@ -224,6 +275,26 @@ public final class NativeLibLoader {
 
     public static boolean isLoaded() {
         return loaded;
+    }
+
+    public static String getLoadedPlatform() {
+        return loadedPlatform;
+    }
+
+    public static String getNativeBackend() {
+        return nativeBackend;
+    }
+
+    public static String getFallbackReason() {
+        return fallbackReason;
+    }
+
+    public static String getStatusSummary() {
+        return "available=" + available
+                + ", loaded=" + loaded
+                + ", platform=" + loadedPlatform
+                + ", backend=" + nativeBackend
+                + ", fallback=" + (fallbackReason.isBlank() ? "none" : fallbackReason);
     }
 
     public static boolean isOnAndroid() {

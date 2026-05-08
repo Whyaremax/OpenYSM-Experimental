@@ -22,6 +22,8 @@ public class GeneralConfig {
 
     public static ForgeConfigSpec.BooleanValue USE_COMPATIBILITY_RENDERER;
 
+    public static ForgeConfigSpec.EnumValue<NativeAccelerationMode> NATIVE_ACCELERATION_MODE;
+
     public static ForgeConfigSpec.DoubleValue SOUND_VOLUME;
 
     public static ForgeConfigSpec.BooleanValue SHOW_MODEL_ID_FIRST;
@@ -58,6 +60,8 @@ public class GeneralConfig {
         DISABLE_EXTERNAL_FP_ANIM = builder.define("DisableExternalFirstPersonAnim", false);
         builder.comment("If rendering errors occur, try turning on this.");
         USE_COMPATIBILITY_RENDERER = builder.define("UseCompatibilityRenderer", false);
+        builder.comment("Experimental Java/JNI acceleration mode. AUTO keeps Java fallback until native render parity is proven. RENDER_ONLY enables the optional native renderer. FULL_EXPERIMENTAL is reserved for future native parser/audio/GPU work.");
+        NATIVE_ACCELERATION_MODE = builder.defineEnum("NativeAccelerationMode", NativeAccelerationMode.AUTO);
         builder.comment("The amount of volume when the animation is played.");
         SOUND_VOLUME = builder.defineInRange("SoundVolume", 100.0d, 0.0d, 100.0d);
         builder.comment("Whether to display model ID first in the model selection screen, instead of the model name filled in by the model author.");

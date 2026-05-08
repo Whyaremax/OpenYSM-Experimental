@@ -12,6 +12,30 @@
 
 **请注意：项目并非 Production Ready，可能存在命名语义错误，渲染错误等问题，如果您在使用过程中遇到了任何问题请打开 Issue 反馈，最好附带截图和可能的报错日志。**
 
+## 当前进度（OpenYSM-Experimental）
+
+这个分支目前重点不是做一个稳定发布版，而是把 OpenYSM 的加载、兼容、Java fallback 和 native 渲染实验整理成可测试的工作树。
+
+当前已经接入或验证：
+
+- Forge 1.20.1 / YSM 2.6.5 的 Java 侧模型加载、渲染、动画控制器、音频和纹理解码路径。
+- 现代已加密 `.ysm` 模型加载，以及原版/旧版 YSM flat-folder 结构兼容：`info.json`、`main.json`、`arm.json`、`*.animation.json` 和纹理可以合成为当前 descriptor 结构。
+- 旧版 `.ysm` 读取 fallback：优先走新版 `YsmCrypt.decryptYsmFile`，失败后尝试 legacy YSGP v1/v2 解包并交给 folder deserializer。
+- legacy `extra.animation.json` 会补齐 `properties.extra_animation`，让动画轮盘能显示和触发旧模型的额外动画。
+- 默认模型握手/同步路径已修正，避免客户端和服务器在默认模型处理上不一致。
+- 可选 native renderer 已接入 Java/JNI render-first fast path：
+  - 配置模式保留 `AUTO`、`OFF`、`RENDER_ONLY`、`FULL_EXPERIMENTAL`。
+  - `AUTO` 仍默认走 Java renderer；要测试 native 需要选择 `RENDER_ONLY` 或使用 `-Dysm.nativeRenderer=render`。
+  - `/openysm native status` 和 `/openysm native parity` 可用于查看 native 状态和做 Java/native 输出对比。
+  - 当前 native 后端是 scalar CPU path，不包含 AVX2/SIMD。
+  - Windows x64 已有实机渲染验证；CPU Scalar V2 的本地 harness 已通过，Windows 场景 FPS/回归测试仍需要继续跑。
+
+仍然实验中：
+
+- native renderer 永久保留 Java fallback；任何 native 库加载、自检、缓存、DirectBuffer 或兼容路径失败都应回退 Java。
+- 旧版/未加密模型仍需要更多真实样本回归，特别是低版本二进制格式和边缘动画数据。
+- AVX2/SIMD、GPU renderer、native parser/audio/crypto/zstd 加速暂时不是当前补丁目标。
+
 ## 为什么开源？
 
 我们决定将新版 YSM 源码开源，主要基于以下几个原因：
@@ -41,9 +65,15 @@ OpenYSM 开发组一直非常支持开放、自由的游戏开发氛围，我们
 - [x] 符合YSM标准的服务器客户端通讯握手流程
 - [x] 模型的读取与渲染
 - [x] 子模型动画控制器
-- [x] SIMD加速渲染可构建并接通可选 native fast path（性能与稳定性仍需实测）
 - [x] 与服务器通讯握手时默认模型未正确处理
-- [ ] 未测试低版本二进制模型/未加密模型的兼容性
+- [x] 原版/旧版 flat-folder 模型结构兼容：`info.json`、`main.json`、`arm.json`、动画 JSON 和纹理
+- [x] legacy `.ysm` fallback 读取路径已接入
+- [x] legacy extra animation 会补齐动画轮盘数据
+- [x] 可选 scalar native render-first fast path 已接入；Windows x64 已通过实机渲染验证，Java fallback 永久保留
+- [x] CPU Scalar V2 native harness 已覆盖骨骼父子层级、part mask、36-byte packed 输出、glow light、projection culling、隐藏骨骼、动画变换和非均匀缩放法线
+- [ ] CPU Scalar V2 在 Windows benchmark 场景中继续做 `/openysm native parity` 和 FPS 回归
+- [ ] 更多低版本二进制模型/未加密模型真实样本兼容性测试
+- [ ] AVX2/SIMD native renderer 优化（等 scalar path 足够稳定后再做）
 - [ ] YSGPHeader生成
 
 ## 修改
@@ -52,7 +82,11 @@ OpenYSM 开发组一直非常支持开放、自由的游戏开发氛围，我们
 
 - 使用 Java 重写了加载和渲染逻辑，现在可以脱离 Native 运行，例如在 MacOS，RISC-V 甚至手机上
 - 支持现有的已加密的 YSM 模型
+- 支持一部分原版/旧版 YSM 模型目录和旧 `.ysm` 包作为兼容输入
+- 补齐旧模型 extra animation 到动画轮盘所需的 metadata
+- 添加了可选 native scalar renderer，用于测试 Java/JNI 直写顶点缓冲的渲染加速；默认仍以 Java renderer 为稳定 fallback
 - 添加了`/openysm cache dump`命令帮助你调试模型传输，导出服务器中的所有模型
+- 添加了`/openysm native status`和`/openysm native parity`命令帮助你调试 native renderer 状态和 Java/native 输出一致性
 
 ## 开源协议
 

@@ -458,6 +458,7 @@ public class ClientModelManager {
             Minecraft.getInstance().execute(() -> {
                 for (ModelAssembly model : oldModels.values()) {
                     if (model != null) {
+                        model.freeNativeCaches();
                         for (AbstractTexture tex : model.getTextures()) {
                             UploadManager.removeTexture(tex);
                         }
@@ -653,6 +654,7 @@ public class ClientModelManager {
                 for (String str : removedModelIds) {
                     ModelAssembly assembly = map.remove(str);
                     if (assembly != null) {
+                        assembly.freeNativeCaches();
                         removed.add(assembly);
                     }
                 }
@@ -777,7 +779,10 @@ public class ClientModelManager {
         while (true) {
             Pair<ModelAssembly, String> pairPoll = pendingModelQueue.poll();
             if (pairPoll != null) {
-                object2ReferenceOpenHashMap.put(pairPoll.getRight(), pairPoll.getLeft());
+                ModelAssembly previous = object2ReferenceOpenHashMap.put(pairPoll.getRight(), pairPoll.getLeft());
+                if (previous != null && previous != pairPoll.getLeft()) {
+                    previous.freeNativeCaches();
+                }
             } else {
                 modelAssemblyMap = object2ReferenceOpenHashMap;
                 forEachGuiWidget(guiWidget -> guiWidget.onModelsUpdated(object2ReferenceOpenHashMap));

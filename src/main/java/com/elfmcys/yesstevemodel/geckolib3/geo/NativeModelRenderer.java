@@ -4,8 +4,8 @@ import com.elfmcys.yesstevemodel.NativeLibLoader;
 import com.elfmcys.yesstevemodel.YesSteveModel;
 import com.elfmcys.yesstevemodel.client.compat.oculus.OculusCompat;
 import com.elfmcys.yesstevemodel.client.compat.optifine.OptiFineDetector;
-import com.elfmcys.yesstevemodel.client.renderer.ModelPreviewRenderer;
 import com.elfmcys.yesstevemodel.config.GeneralConfig;
+import com.elfmcys.yesstevemodel.config.NativeAccelerationMode;
 import com.elfmcys.yesstevemodel.geckolib3.geo.render.built.*;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -22,13 +22,15 @@ import java.nio.FloatBuffer;
 import java.util.Locale;
 
 public class NativeModelRenderer {
-    private static final Matrix4f projectionModelViewMatrix = new Matrix4f();
+    static final float CULL_DETERMINANT_EPSILON = 1.0e-7f;
     private static boolean nativeRendererDisabled = false;
-    private static final NativeMode nativeMode = NativeMode.parse(System.getProperty("ysm.nativeRenderer", "auto"));
     private static final boolean nativeStats = Boolean.getBoolean("ysm.nativeRenderer.stats");
     private static final long nativeStatsIntervalNanos = Long.getLong("ysm.nativeRenderer.statsIntervalSec", 5L) * 1_000_000_000L;
     private static final boolean nativeDebug = Boolean.getBoolean("ysm.nativeRenderer.debug");
+    private static final boolean allowCompatNativeRenderer = Boolean.getBoolean("ysm.nativeRenderer.allowCompat");
     private static long nativeCalls;
+    private static long nativeDirectCalls;
+    private static long nativeCompatCalls;
     private static long javaCalls;
     private static long nativeNanos;
     private static long javaNanos;
@@ -36,169 +38,261 @@ public class NativeModelRenderer {
     private static long skippedNoLib;
     private static long skippedDisabled;
     private static long skippedNoCache;
+    private static String lastFallbackReason = "not attempted";
     private static long lastStatsLogNanos = System.nanoTime();
 
-    private enum NativeMode {
-        AUTO,
-        FORCE,
-        OFF;
-
-        private static NativeMode parse(String value) {
-            return switch (value.toLowerCase(Locale.ROOT)) {
-                case "force", "on", "native" -> FORCE;
-                case "off", "java", "false" -> OFF;
-                default -> AUTO;
-            };
-        }
-    }
-
     static {
-        if (nativeDebug || nativeStats || nativeMode != NativeMode.AUTO) {
+        if (nativeDebug || nativeStats || System.getProperty("ysm.nativeRenderer") != null) {
             YesSteveModel.LOGGER.info(
-                    "[YSM native renderer] configured mode={}, stats={}, debug={}, statsIntervalSec={}",
-                    nativeMode,
+                    "[YSM native renderer] stats={}, debug={}, statsIntervalSec={}, nativeStatus={}",
                     nativeStats,
                     nativeDebug,
-                    nativeStatsIntervalNanos / 1_000_000_000L
+                    nativeStatsIntervalNanos / 1_000_000_000L,
+                    NativeLibLoader.getStatusSummary()
             );
         }
     }
 
     public static void renderMesh(VertexConsumer buffer, PoseStack.Pose pose, GeoModel model, float[] boneParams, float[] stateBuffer, int textureIndex, int renderPartMask, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
         OculusCompat.updatePBRState();
-        boolean isCompatMode = OptiFineDetector.isOptifinePresent() || GeneralConfig.USE_COMPATIBILITY_RENDERER.get();
-        RenderSystem.getProjectionMatrix().mul(RenderSystem.getModelViewMatrix(), projectionModelViewMatrix);
-        boolean isPreview = ModelPreviewRenderer.isPreview() || ModelPreviewRenderer.isExtraPlayer();
+        boolean optifinePresent = OptiFineDetector.isOptifinePresent();
+        boolean compatibilityRendererEnabled = GeneralConfig.USE_COMPATIBILITY_RENDERER.get();
+        boolean isCompatMode = optifinePresent || compatibilityRendererEnabled;
+        boolean blockedByCompatMode = isCompatMode && !allowCompatNativeRenderer;
 
+        NativeAccelerationMode nativeMode = getNativeMode();
         boolean hasNativeLib = NativeLibLoader.isLoaded();
-        boolean hasNativeCache = model.nativeModelHandle != 0 && model.vertexOutBuffer != null;
+        NativeModelCache nativeCache = model.nativeCache();
+        boolean hasNativeCache = nativeCache != null && nativeCache.isReady();
+        String nativeCacheFailureReason = nativeCache == null ? "model has no native cache" : nativeCache.failureReason();
+        boolean canUseNativeRenderer = nativeMode.allowsRenderer()
+                && !nativeRendererDisabled
+                && !blockedByCompatMode
+                && hasNativeLib
+                && hasNativeCache;
 
-        if (nativeMode != NativeMode.OFF && !nativeRendererDisabled && hasNativeLib && hasNativeCache) {
+        if (canUseNativeRenderer) {
             try {
                 long startNanos = nativeStats ? System.nanoTime() : 0L;
-                nativeRenderModel(
+                boolean directTransfer = nativeRenderModel(
                         buffer,
                         pose,
-                        projectionModelViewMatrix,
                         isCompatMode,
-                        model,
+                        nativeCache,
                         boneParams,
-                        stateBuffer,
-                        textureIndex,
                         renderPartMask,
                         packedLight,
                         packedOverlay,
-                        red, green, blue, alpha,
-                        isPreview
+                        red, green, blue, alpha
                 );
-                recordNativeRender(startNanos);
+                recordNativeRender(startNanos, directTransfer);
                 return;
             } catch (Throwable throwable) {
                 nativeFallbacks++;
                 YesSteveModel.LOGGER.error("Native YSM renderer failed", throwable);
-                if (nativeMode == NativeMode.FORCE) {
-                    throw new RuntimeException("Forced native YSM renderer failed", throwable);
-                }
                 nativeRendererDisabled = true;
+                lastFallbackReason = "native render threw: " + throwable.getMessage();
+                NativeLibLoader.disableNativeRenderer(lastFallbackReason, throwable);
             }
         }
 
-        recordNativeSkip(hasNativeLib, hasNativeCache);
-        if (nativeMode == NativeMode.FORCE) {
-            throw new IllegalStateException("Forced native YSM renderer is unavailable: loaded=" + hasNativeLib
-                    + ", disabled=" + nativeRendererDisabled
-                    + ", handle=" + model.nativeModelHandle
-                    + ", outBuffer=" + (model.vertexOutBuffer != null)
-                    + ", loaderError=" + NativeLibLoader.getErrorMessage());
-        }
+        recordNativeSkip(nativeMode, hasNativeLib, hasNativeCache, nativeCacheFailureReason, optifinePresent, compatibilityRendererEnabled, blockedByCompatMode);
 
         long startNanos = nativeStats ? System.nanoTime() : 0L;
         renderModel(
                 buffer,
                 pose,
-                projectionModelViewMatrix,
-                isCompatMode,
                 model,
                 boneParams,
-                stateBuffer,
-                textureIndex,
                 renderPartMask,
                 packedLight,
                 packedOverlay,
-                red, green, blue, alpha,
-                isPreview
+                red, green, blue, alpha
         );
         recordJavaRender(startNanos);
     }
 
-    private static void recordNativeSkip(boolean hasNativeLib, boolean hasNativeCache) {
-        if (!nativeStats && !nativeDebug) return;
-        if (nativeMode == NativeMode.OFF) {
+    public static NativeAccelerationMode getNativeMode() {
+        NativeAccelerationMode configured = GeneralConfig.NATIVE_ACCELERATION_MODE.get();
+        String property = System.getProperty("ysm.nativeRenderer");
+        if (property == null) return configured;
+        return switch (property.toLowerCase(Locale.ROOT)) {
+            case "off", "java", "false" -> NativeAccelerationMode.OFF;
+            case "force", "on", "native", "render", "render_only" -> NativeAccelerationMode.RENDER_ONLY;
+            case "full", "full_experimental" -> NativeAccelerationMode.FULL_EXPERIMENTAL;
+            default -> NativeAccelerationMode.parse(property, configured);
+        };
+    }
+
+    public static NativeStats getStats() {
+        double nativeAvgUs = nativeCalls == 0 ? 0.0 : nativeNanos / (nativeCalls * 1000.0);
+        double javaAvgUs = javaCalls == 0 ? 0.0 : javaNanos / (javaCalls * 1000.0);
+        return new NativeStats(
+                getNativeMode(),
+                nativeCalls,
+                nativeDirectCalls,
+                nativeCompatCalls,
+                javaCalls,
+                nativeFallbacks,
+                skippedNoLib,
+                skippedDisabled,
+                skippedNoCache,
+                OptiFineDetector.isOptifinePresent(),
+                GeneralConfig.USE_COMPATIBILITY_RENDERER.get(),
+                allowCompatNativeRenderer,
+                nativeStats,
+                nativeAvgUs,
+                javaAvgUs,
+                lastFallbackReason
+        );
+    }
+
+    public record NativeStats(NativeAccelerationMode mode,
+                              long nativeCalls,
+                              long nativeDirectCalls,
+                              long nativeCompatCalls,
+                              long javaCalls,
+                              long nativeFallbacks,
+                              long skippedNoLib,
+                              long skippedDisabled,
+                              long skippedNoCache,
+                              boolean optifinePresent,
+                              boolean compatibilityRendererEnabled,
+                              boolean allowCompatNativeRenderer,
+                              boolean timingEnabled,
+                              double nativeAvgUs,
+                              double javaAvgUs,
+                              String lastFallbackReason) {
+        public String toDisplayString() {
+            return "mode=" + mode
+                    + ", nativeCalls=" + nativeCalls
+                    + ", nativeDirect=" + nativeDirectCalls
+                    + ", nativeCompat=" + nativeCompatCalls
+                    + ", javaCalls=" + javaCalls
+                    + ", fallbacks=" + nativeFallbacks
+                    + ", skippedNoLib=" + skippedNoLib
+                    + ", skippedDisabled=" + skippedDisabled
+                    + ", skippedNoCache=" + skippedNoCache
+                    + ", optifine=" + optifinePresent
+                    + ", compatConfig=" + compatibilityRendererEnabled
+                    + ", allowCompat=" + allowCompatNativeRenderer
+                    + ", timing=" + (timingEnabled ? "on" : "off")
+                    + ", nativeAvgUs=" + String.format(Locale.ROOT, "%.3f", nativeAvgUs)
+                    + ", javaAvgUs=" + String.format(Locale.ROOT, "%.3f", javaAvgUs)
+                    + ", lastFallback=" + lastFallbackReason;
+        }
+    }
+
+    private static void recordNativeSkip(NativeAccelerationMode nativeMode, boolean hasNativeLib, boolean hasNativeCache, String nativeCacheFailureReason, boolean optifinePresent, boolean compatibilityRendererEnabled, boolean blockedByCompatMode) {
+        if (nativeMode == NativeAccelerationMode.OFF) {
             skippedDisabled++;
+            lastFallbackReason = "native acceleration is OFF";
+        } else if (!nativeMode.allowsRenderer()) {
+            skippedDisabled++;
+            lastFallbackReason = "AUTO keeps Java renderer until native parity is proven";
         } else if (nativeRendererDisabled) {
             skippedDisabled++;
+            lastFallbackReason = "native renderer disabled after a failed condition";
+        } else if (blockedByCompatMode) {
+            skippedDisabled++;
+            if (optifinePresent) {
+                lastFallbackReason = "OptiFine path; add -Dysm.nativeRenderer.allowCompat=true to test native per-vertex path";
+            } else if (compatibilityRendererEnabled) {
+                lastFallbackReason = "UseCompatibilityRenderer=true; disable it or add -Dysm.nativeRenderer.allowCompat=true";
+            } else {
+                lastFallbackReason = "compatibility renderer path";
+            }
         } else if (!hasNativeLib) {
             skippedNoLib++;
+            lastFallbackReason = NativeLibLoader.getFallbackReason();
         } else if (!hasNativeCache) {
             skippedNoCache++;
+            lastFallbackReason = nativeCacheFailureReason == null || nativeCacheFailureReason.isBlank() ? "model has no native cache" : nativeCacheFailureReason;
+        }
+        if (!nativeStats && !nativeDebug) return;
+        logStatsIfNeeded();
+    }
+
+    private static void recordNativeRender(long startNanos, boolean directTransfer) {
+        nativeCalls++;
+        if (directTransfer) {
+            nativeDirectCalls++;
+            lastFallbackReason = "none; native direct buffer path";
+        } else {
+            nativeCompatCalls++;
+            lastFallbackReason = "none; native compatibility/per-vertex path";
+        }
+        if (nativeStats) {
+            nativeNanos += System.nanoTime() - startNanos;
         }
         logStatsIfNeeded();
     }
 
-    private static void recordNativeRender(long startNanos) {
-        if (!nativeStats) return;
-        nativeCalls++;
-        nativeNanos += System.nanoTime() - startNanos;
-        logStatsIfNeeded();
-    }
-
     private static void recordJavaRender(long startNanos) {
-        if (!nativeStats) return;
         javaCalls++;
-        javaNanos += System.nanoTime() - startNanos;
+        if (nativeStats) {
+            javaNanos += System.nanoTime() - startNanos;
+        }
         logStatsIfNeeded();
     }
 
     private static void logStatsIfNeeded() {
+        if (!nativeStats && !nativeDebug) return;
         long now = System.nanoTime();
         if (now - lastStatsLogNanos < nativeStatsIntervalNanos) return;
         lastStatsLogNanos = now;
         double nativeAvgUs = nativeCalls == 0 ? 0.0 : nativeNanos / (nativeCalls * 1000.0);
         double javaAvgUs = javaCalls == 0 ? 0.0 : javaNanos / (javaCalls * 1000.0);
         YesSteveModel.LOGGER.info(
-                "[YSM native renderer] mode={}, nativeCalls={}, javaCalls={}, fallbacks={}, skippedNoLib={}, skippedDisabled={}, skippedNoCache={}, nativeAvgUs={}, javaAvgUs={}",
-                nativeMode,
+                "[YSM native renderer] mode={}, nativeCalls={}, nativeDirect={}, nativeCompat={}, javaCalls={}, fallbacks={}, skippedNoLib={}, skippedDisabled={}, skippedNoCache={}, nativeAvgUs={}, javaAvgUs={}, lastFallback={}",
+                getNativeMode(),
                 nativeCalls,
+                nativeDirectCalls,
+                nativeCompatCalls,
                 javaCalls,
                 nativeFallbacks,
                 skippedNoLib,
                 skippedDisabled,
                 skippedNoCache,
                 String.format(Locale.ROOT, "%.3f", nativeAvgUs),
-                String.format(Locale.ROOT, "%.3f", javaAvgUs)
+                String.format(Locale.ROOT, "%.3f", javaAvgUs),
+                lastFallbackReason
         );
     }
 
     public static void renderModel(
             VertexConsumer vertexConsumer,
             PoseStack.Pose pose,
-            Matrix4f projectionModelViewMatrix,
-            boolean isCompatMode,
             GeoModel mesh,
             float[] boneParams,
-            float[] stateBuffer,
-            int textureIndex, int renderPartMask,
+            int renderPartMask,
             int packedLight, int packedOverlay,
-            float r, float g, float b, float a,
-            boolean isPreview) {
+            float r, float g, float b, float a) {
 
         if (mesh.bakedBones == null || mesh.bakedBones.isEmpty()) return;
 
-        // TODO: 修復GC壓力
-        Matrix4f rootPoseMat = pose.pose();
-        Matrix3f rootNormalMC = pose.normal();
-        Matrix4f projMat = RenderSystem.getProjectionMatrix();
+        visitModelVertices(
+                mesh,
+                boneParams,
+                pose.pose(),
+                pose.normal(),
+                RenderSystem.getProjectionMatrix(),
+                renderPartMask,
+                packedLight,
+                (x, y, z, u, v, nx, ny, nz, light) ->
+                        vertexConsumer.vertex(x, y, z, r, g, b, a, u, v, packedOverlay, light, nx, ny, nz)
+        );
+    }
 
+    static void visitModelVertices(
+            GeoModel mesh,
+            float[] boneParams,
+            Matrix4f rootPoseMat,
+            Matrix3f rootNormalMC,
+            Matrix4f projMat,
+            int renderPartMask,
+            int packedLight,
+            ModelVertexSink sink) {
         Matrix4f identityMat = new Matrix4f();
         Matrix4f globalBoneMat = new Matrix4f();
         Matrix4f projBoneMat = new Matrix4f();
@@ -244,20 +338,30 @@ public class NativeModelRenderer {
                     p2.set(quad.positions[1].x(), quad.positions[1].y(), quad.positions[1].z(), 1.0f).mul(projBoneMat);
                     p3.set(quad.positions[2].x(), quad.positions[2].y(), quad.positions[2].z(), 1.0f).mul(projBoneMat);
                     float det = p1.x() * (p2.y() * p3.w() - p3.y() * p2.w()) - p2.x() * (p1.y() * p3.w() - p3.y() * p1.w()) + p3.x() * (p1.y() * p2.w() - p2.y() * p1.w());
-                    if (det <= 0.0f && cube.cullable) {
+                    if (det <= CULL_DETERMINANT_EPSILON && cube.cullable) {
                         continue;
                     }
                     tempNorm.set(quad.normal).mul(globalNormalMat).normalize();
                     for (int v = 0; v < 4; v++) {
                         tempPos.set(quad.positions[v].x(), quad.positions[v].y(), quad.positions[v].z(), 1.0f).mul(globalBoneMat);
-                        vertexConsumer.vertex(tempPos.x(), tempPos.y(), tempPos.z(), r, g, b, a, quad.uvs[v].x(), quad.uvs[v].y(), packedOverlay, currentPackedLight, tempNorm.x(), tempNorm.y(), tempNorm.z());
+                        sink.vertex(
+                                tempPos.x(), tempPos.y(), tempPos.z(),
+                                quad.uvs[v].x(), quad.uvs[v].y(),
+                                tempNorm.x(), tempNorm.y(), tempNorm.z(),
+                                currentPackedLight
+                        );
                     }
                 }
             }
         }
     }
 
-    private static Matrix4f calculateBoneMatrix(int idx, java.util.List<GeoModel.BakedBone> bones, float[] boneParams, Matrix4f[] cache, boolean[] visibleCache, Matrix4f rootPose) {
+    @FunctionalInterface
+    interface ModelVertexSink {
+        void vertex(float x, float y, float z, float u, float v, float nx, float ny, float nz, int packedLight);
+    }
+
+    static Matrix4f calculateBoneMatrix(int idx, java.util.List<GeoModel.BakedBone> bones, float[] boneParams, Matrix4f[] cache, boolean[] visibleCache, Matrix4f rootPose) {
         if (cache[idx] != null) return cache[idx];
 
         GeoModel.BakedBone bone = bones.get(idx);
@@ -285,14 +389,6 @@ public class NativeModelRenderer {
         float animSy = boneParams[pOffset + 7];
         float animSz = boneParams[pOffset + 8];
 
-        float unk1 = boneParams[pOffset + 9];
-        float unk2 = boneParams[pOffset + 10];
-        float unk3 = boneParams[pOffset + 11];
-
-        if (unk1 != 0.0F && unk2 != 0.0F && unk3 != 0.0F) {
-            //"".hashCode();
-        }
-
         if (animSx == 0.0f && animSy == 0.0f && animSz == 0.0f) {
             isVisible = false;
         }
@@ -305,10 +401,6 @@ public class NativeModelRenderer {
         localMat.rotateZ(animRz);
         localMat.rotateY(animRy);
         localMat.rotateX(animRx);
-
-        if (bone.name.equals("gun")) {
-            //"".hashCode();
-        }
 
         if (animSx != 1.0f || animSy != 1.0f || animSz != 1.0f) {
             localMat.scale(animSx, animSy, animSz);
@@ -328,23 +420,20 @@ public class NativeModelRenderer {
     private static ByteBuffer animTransferBuffer = ByteBuffer.allocateDirect(currentAnimBufferCapacityBytes).order(ByteOrder.nativeOrder());
     private static FloatBuffer animTransferFloatBuffer = animTransferBuffer.asFloatBuffer();
 
-    public static void nativeRenderModel(
+    public static boolean nativeRenderModel(
             VertexConsumer vertexConsumer,
             PoseStack.Pose pose,
-            Matrix4f projectionModelViewMatrix,
             boolean isCompatMode,
-            GeoModel mesh,
+            NativeModelCache nativeCache,
             float[] boneVertex,
-            float[] stateBuffer,
-            int textureIndex, int renderPartMask,
+            int renderPartMask,
             int packedLight, int packedOverlay,
-            float r, float g, float b, float a,
-            boolean isPreview) {
+            float r, float g, float b, float a) {
 
-        if (mesh.nativeModelHandle == 0 || mesh.vertexOutBuffer == null) return;
+        if (nativeCache == null || !nativeCache.isReady()) return false;
 
         Matrix4f projMat = RenderSystem.getProjectionMatrix();
-        ByteBuffer outBuffer = mesh.vertexOutBuffer;
+        ByteBuffer outBuffer = nativeCache.vertexOutBuffer();
         boolean useDirectMemoryTransfer = !isCompatMode && (vertexConsumer instanceof BufferBuilder);
 
         matrixTransferFloatBuffer.clear();
@@ -361,9 +450,18 @@ public class NativeModelRenderer {
         animTransferFloatBuffer.clear();
         animTransferFloatBuffer.put(boneVertex);
 
-        int vertexCount = GeoModel.nComputeModelVertices(mesh.nativeModelHandle, outBuffer, matrixTransferBuffer, animTransferBuffer, renderPartMask, packedLight, packedOverlay, r, g, b, a, useDirectMemoryTransfer);
+        int vertexCount = NativeModelCache.nComputeModelVertices(nativeCache.handle(), outBuffer, matrixTransferBuffer, animTransferBuffer, renderPartMask, packedLight, packedOverlay, r, g, b, a, useDirectMemoryTransfer);
 
-        if (vertexCount == 0) return;
+        if (vertexCount < 0) {
+            throw new IllegalStateException("native renderer rejected output buffer: code=" + vertexCount
+                    + ", capacity=" + outBuffer.capacity()
+                    + ", vertexCapacity=" + nativeCache.vertexCapacity());
+        }
+        if (vertexCount > nativeCache.vertexCapacity()) {
+            throw new IllegalStateException("native renderer overflow: vertices=" + vertexCount
+                    + ", capacity=" + nativeCache.vertexCapacity());
+        }
+        if (vertexCount == 0) return useDirectMemoryTransfer;
 
         if (useDirectMemoryTransfer) {
             BufferBuilder builder = (BufferBuilder) vertexConsumer;
@@ -372,7 +470,7 @@ public class NativeModelRenderer {
             builder.putBulkData(outBuffer);
             outBuffer.clear();
         } else {
-            long address = MemoryUtil.memAddress(mesh.vertexOutBuffer);
+            long address = MemoryUtil.memAddress(outBuffer);
             for (int i = 0; i < vertexCount; i++) {
                 long ptr = address + (i * 14L * 4L);
                 float vx = MemoryUtil.memGetFloat(ptr);
@@ -393,5 +491,6 @@ public class NativeModelRenderer {
             }
         }
 
+        return useDirectMemoryTransfer;
     }
 }

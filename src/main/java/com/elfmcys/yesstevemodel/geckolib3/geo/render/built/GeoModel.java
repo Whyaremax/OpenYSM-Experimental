@@ -1,6 +1,5 @@
 package com.elfmcys.yesstevemodel.geckolib3.geo.render.built;
 
-import com.elfmcys.yesstevemodel.YesSteveModel;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.util.StringPool;
 import com.elfmcys.yesstevemodel.geckolib3.geo.animated.AnimatedGeoModel;
 import com.elfmcys.yesstevemodel.resource.models.GeometryDescription;
@@ -13,16 +12,12 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.*;
 
 /**
  * Bedrock的.geo模型文件
  */
 public class GeoModel {
-    private static final boolean nativeDebug = Boolean.getBoolean("ysm.nativeRenderer.debug");
-
     @NotNull
     public final List<GeoBone> bones;
 
@@ -112,75 +107,27 @@ public class GeoModel {
         public Vector3f normal;
     }
 
-    public long nativeModelHandle = 0;
-    public ByteBuffer vertexOutBuffer;
-
-    public static native long nInitModelCache(ByteBuffer buffer);
-
-    public static native void nDestroyModelCache(long handle);
-
-    public static native int nComputeModelVertices(long handle, ByteBuffer outBuffer, ByteBuffer matrixBuffer, ByteBuffer animBuffer, int renderPartMask, int packedLight, int packedOverlay, float r, float g, float b, float a, boolean sb);
+    private NativeModelCache nativeCache;
 
     public void buildNativeCache() {
-        if (bakedBones == null || bakedBones.isEmpty()) return;
+        getOrBuildNativeCache();
+    }
 
-        ByteBuffer buffer = ByteBuffer.allocateDirect(1024 * 1024 * 20).order(ByteOrder.nativeOrder());
-        int quadCount = 0;
-
-        buffer.putInt(bakedBones.size());
-        for (BakedBone bone : bakedBones) {
-            buffer.putInt(bone.parentIdx);
-            buffer.putInt(bone.partMask);
-            buffer.put((byte) (bone.glow ? 1 : 0));
-            buffer.putFloat(bone.pivotX);
-            buffer.putFloat(bone.pivotY);
-            buffer.putFloat(bone.pivotZ);
-
-            buffer.putInt(bone.cubes.size());
-            for (BakedCube cube : bone.cubes) {
-                buffer.put((byte) (cube.cullable ? 1 : 0));
-                buffer.putInt(cube.quads.size());
-                quadCount += cube.quads.size();
-                for (BakedQuad quad : cube.quads) {
-                    for (int v = 0; v < 4; v++) { // 12 floats
-                        buffer.putFloat(quad.positions[v].x());
-                        buffer.putFloat(quad.positions[v].y());
-                        buffer.putFloat(quad.positions[v].z());
-                    }
-                    for (int v = 0; v < 4; v++) { // 8 floats
-                        buffer.putFloat(quad.uvs[v].x());
-                        buffer.putFloat(quad.uvs[v].y());
-                    }
-                    // 3 floats
-                    buffer.putFloat(quad.normal.x());
-                    buffer.putFloat(quad.normal.y());
-                    buffer.putFloat(quad.normal.z());
-                }
-            }
+    public NativeModelCache getOrBuildNativeCache() {
+        if (nativeCache == null) {
+            nativeCache = NativeModelCache.build(this);
         }
+        return nativeCache;
+    }
 
-        buffer.flip();
-        int vertexCount = quadCount * 4;
-        int requiredBytes = vertexCount * 14 * Float.BYTES;
-        vertexOutBuffer = ByteBuffer.allocateDirect(Math.max(requiredBytes, vertexCount * 36)).order(ByteOrder.nativeOrder());
-        this.nativeModelHandle = nInitModelCache(buffer);
-        if (nativeDebug) {
-            YesSteveModel.LOGGER.info(
-                    "[YSM native renderer] built cache handle={}, bones={}, quads={}, vertices={}, cacheBytes={}, outBufferBytes={}",
-                    nativeModelHandle,
-                    bakedBones.size(),
-                    quadCount,
-                    vertexCount,
-                    buffer.limit(),
-                    vertexOutBuffer.capacity()
-            );
-        }
+    public NativeModelCache nativeCache() {
+        return nativeCache;
     }
 
     public void freeNativeCache() {
-        if (nativeModelHandle != 0) {
-            nDestroyModelCache(nativeModelHandle);
-            nativeModelHandle = 0;
+        if (nativeCache != null) {
+            nativeCache.close();
+            nativeCache = null;
         }
     }
 

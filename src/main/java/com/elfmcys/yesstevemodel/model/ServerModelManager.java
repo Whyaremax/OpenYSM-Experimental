@@ -9,6 +9,7 @@ import com.elfmcys.yesstevemodel.resource.YSMClientMapper;
 import com.elfmcys.yesstevemodel.resource.YSMFolderDeserializer;
 import com.elfmcys.yesstevemodel.resource.pojo.RawYsmModel;
 import net.minecraft.network.chat.Component;
+import rip.ysm.legacy.YesModelUtils;
 import rip.ysm.security.YsmCrypt;
 import rip.ysm.security.YSMByteBuf;
 import com.elfmcys.yesstevemodel.YesSteveModel;
@@ -444,7 +445,7 @@ public final class ServerModelManager {
             stream.forEach(path -> {
                 String fileName = path.getFileName().toString();
                 try {
-                    if (fileName.equals("ysm.json")) {
+                    if (fileName.equals("ysm.json") || (fileName.equals("info.json") && !Files.exists(path.getParent().resolve("ysm.json")))) {
                         Path modelDir = path.getParent();
                         // 提取相對路徑作為ID
                         String modelId = baseDir.relativize(modelDir).toString().replace('\\', '/');
@@ -462,10 +463,8 @@ public final class ServerModelManager {
                         String relativePath = baseDir.relativize(path).toString().replace('\\', '/');
                         String modelId = /*relativePath.substring(0, relativePath.length() - 4)*/relativePath;
                         byte[] raw = Files.readAllBytes(path);
-                        byte[] decrypted = YsmCrypt.decryptYsmFile(raw);
-                        try (YSMBinaryDeserializer deserializer = new YSMBinaryDeserializer(decrypted)) {
-                            RawYsmModel rawModel = deserializer.deserializeKeepOpen();
-                            deserializer.parseYSMFooter(rawModel); //只用于gui展示数据
+                        RawYsmModel rawModel = deserializeYsmFile(raw);
+                        if (rawModel != null) {
                             ServerModelData data = processAndCacheModel(modelId, rawModel, cacheDir, isAuth, validCaches);
                             if (data != null) {
                                 loaded.put(modelId, data);
@@ -479,6 +478,23 @@ public final class ServerModelManager {
             });
         } catch (Exception e) {
             YesSteveModel.LOGGER.error("Failed to walk directory: " + baseDir, e);
+        }
+    }
+
+    private static RawYsmModel deserializeYsmFile(byte[] raw) throws Exception {
+        try {
+            byte[] decrypted = YsmCrypt.decryptYsmFile(raw);
+            try (YSMBinaryDeserializer deserializer = new YSMBinaryDeserializer(decrypted)) {
+                RawYsmModel rawModel = deserializer.deserializeKeepOpen();
+                deserializer.parseYSMFooter(rawModel); //只用于gui展示数据
+                return rawModel;
+            }
+        } catch (Exception modernError) {
+            Map<String, byte[]> legacyFiles = YesModelUtils.input(raw);
+            if (legacyFiles.isEmpty()) throw modernError;
+            try (YSMFolderDeserializer deserializer = new YSMFolderDeserializer(legacyFiles)) {
+                return deserializer.deserialize();
+            }
         }
     }
 

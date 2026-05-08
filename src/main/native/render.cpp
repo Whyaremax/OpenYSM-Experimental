@@ -1,232 +1,503 @@
-#if defined(__GNUC__) && (defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86))
-#pragma GCC optimize("O3,unroll-loops")
-#pragma GCC target("sse4.1,fma")
-#endif
-
-#include <immintrin.h>
-#include <vector>
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <functional>
+#include <vector>
+
 #include "jni.h"
-#include <cstdint>
 
-#if defined(__GNUC__) || defined(__clang__)
-#define FAST_SINCOS(x, s, c) sincosf((x), (s), (c))
-#else
-inline void ms_sincosf(float x, float *s, float *c) {
-    *s = std::sin(x);
-    *c = std::cos(x);
-}
-#define FAST_SINCOS(x, s, c) ms_sincosf((x), (s), (c))
-#endif
-
-#if defined(__FMA__)
-#define MADD_PS(a, b, c) _mm_fmadd_ps((a), (b), (c))
-#else
-#define MADD_PS(a, b, c) _mm_add_ps(_mm_mul_ps((a), (b)), (c))
-#endif
-
-#pragma pack(push, 1)
-struct PackedVertex {
-    float x, y, z;
-    uint8_t r, g, b, a;
-    float u, v;
-    int overlay;
-    int light;
-    int8_t nx, ny, nz;
-    uint8_t padding;
-};
-#pragma pack(pop)
-struct FastQuad {
-    int boneIdx;
-    bool cullable;
-    __m128 x, y, z;
-    __m128 u, v;
-    float nx, ny, nz;
-};
+namespace {
+constexpr int ABI_VERSION = 1;
+constexpr int FLOAT_VERTEX_BYTES = 14 * 4;
+constexpr int PACKED_VERTEX_BYTES = 36;
+constexpr float CULL_DETERMINANT_EPSILON = 1.0e-7f;
 
 struct NativeBone {
     int parentIdx;
     int partMask;
     bool glow;
-    float pivotX, pivotY, pivotZ;
+    float pivotX;
+    float pivotY;
+    float pivotZ;
 };
 
-struct alignas(16) PrecomputedBoneMats {
-    alignas(16) float gb[16];
-    __m128 gn_c0, gn_c1, gn_c2;
-    int currentLight;
+struct NativeQuad {
+    int quadIdx;
+    int boneIdx;
+    bool cullable;
+    float x[4];
+    float y[4];
+    float z[4];
+    float u[4];
+    float v[4];
+    float nx;
+    float ny;
+    float nz;
 };
 
-struct alignas(16) Mat4 {
+struct Mat4 {
     float m[16];
-    Mat4() { identity(); }
-    Mat4(const float *data) { std::memcpy(m, data, 16 * sizeof(float)); }
 
-    inline void identity() {
-        std::memset(m, 0, 16 * sizeof(float));
-        m[0] = m[5] = m[10] = m[15] = 1.0f;
+    Mat4() {
+        identity();
     }
 
-    inline void mul(const Mat4 &right) {
-        __m128 l0 = _mm_load_ps(&m[0]);
-        __m128 l1 = _mm_load_ps(&m[4]);
-        __m128 l2 = _mm_load_ps(&m[8]);
-        __m128 l3 = _mm_load_ps(&m[12]);
-
-        auto mac = [&](const float *r_col) {
-            __m128 v = _mm_loadu_ps(r_col);
-            __m128 res = _mm_mul_ps(l0, _mm_shuffle_ps(v, v, _MM_SHUFFLE(0, 0, 0, 0)));
-            res = MADD_PS(l1, _mm_shuffle_ps(v, v, _MM_SHUFFLE(1, 1, 1, 1)), res);
-            res = MADD_PS(l2, _mm_shuffle_ps(v, v, _MM_SHUFFLE(2, 2, 2, 2)), res);
-            res = MADD_PS(l3, _mm_shuffle_ps(v, v, _MM_SHUFFLE(3, 3, 3, 3)), res);
-            return res;
-        };
-        __m128 r0 = mac(&right.m[0]);
-        __m128 r1 = mac(&right.m[4]);
-        __m128 r2 = mac(&right.m[8]);
-        __m128 r3 = mac(&right.m[12]);
-        _mm_store_ps(&m[0], r0);
-        _mm_store_ps(&m[4], r1);
-        _mm_store_ps(&m[8], r2);
-        _mm_store_ps(&m[12], r3);
+    explicit Mat4(const float *data) {
+        std::memcpy(m, data, sizeof(m));
     }
 
-    inline Mat4 normalMatrix4x4() const {
-        Mat4 res;
-        res.m[0] = m[0];
-        res.m[1] = m[1];
-        res.m[2] = m[2];
-        res.m[4] = m[4];
-        res.m[5] = m[5];
-        res.m[6] = m[6];
-        res.m[8] = m[8];
-        res.m[9] = m[9];
-        res.m[10] = m[10];
-        return res;
+    void identity() {
+        std::memset(m, 0, sizeof(m));
+        m[0] = 1.0f;
+        m[5] = 1.0f;
+        m[10] = 1.0f;
+        m[15] = 1.0f;
     }
+
+    void mul(const Mat4 &right) {
+        float out[16];
+        for (int col = 0; col < 4; ++col) {
+            for (int row = 0; row < 4; ++row) {
+                out[col * 4 + row] =
+                    m[0 * 4 + row] * right.m[col * 4 + 0] +
+                    m[1 * 4 + row] * right.m[col * 4 + 1] +
+                    m[2 * 4 + row] * right.m[col * 4 + 2] +
+                    m[3 * 4 + row] * right.m[col * 4 + 3];
+            }
+        }
+        std::memcpy(m, out, sizeof(m));
+    }
+
+    Mat4 normalMatrix4x4() const {
+        Mat4 out;
+        float a00 = m[0], a01 = m[4], a02 = m[8];
+        float a10 = m[1], a11 = m[5], a12 = m[9];
+        float a20 = m[2], a21 = m[6], a22 = m[10];
+
+        float c00 = a11 * a22 - a12 * a21;
+        float c01 = a12 * a20 - a10 * a22;
+        float c02 = a10 * a21 - a11 * a20;
+        float c10 = a02 * a21 - a01 * a22;
+        float c11 = a00 * a22 - a02 * a20;
+        float c12 = a01 * a20 - a00 * a21;
+        float c20 = a01 * a12 - a02 * a11;
+        float c21 = a02 * a10 - a00 * a12;
+        float c22 = a00 * a11 - a01 * a10;
+
+        float det = a00 * c00 + a01 * c01 + a02 * c02;
+        if (std::fabs(det) <= 1.0e-8f) {
+            out.m[0] = a00;
+            out.m[1] = a10;
+            out.m[2] = a20;
+            out.m[4] = a01;
+            out.m[5] = a11;
+            out.m[6] = a21;
+            out.m[8] = a02;
+            out.m[9] = a12;
+            out.m[10] = a22;
+            return out;
+        }
+
+        float invDet = 1.0f / det;
+        out.m[0] = c00 * invDet;
+        out.m[1] = c10 * invDet;
+        out.m[2] = c20 * invDet;
+        out.m[4] = c01 * invDet;
+        out.m[5] = c11 * invDet;
+        out.m[6] = c21 * invDet;
+        out.m[8] = c02 * invDet;
+        out.m[9] = c12 * invDet;
+        out.m[10] = c22 * invDet;
+        return out;
+    }
+};
+
+struct Vec3 {
+    float x;
+    float y;
+    float z;
+};
+
+struct Vec4 {
+    float x;
+    float y;
+    float z;
+    float w;
 };
 
 struct NativeModel {
     std::vector<NativeBone> bones;
-    std::vector<FastQuad> fastQuads;
+    std::vector<NativeQuad> quads;
     std::vector<int> evalOrder;
-    std::vector<Mat4> cacheLocalTransforms;
-    std::vector<char> cacheVisible;
-    std::vector<PrecomputedBoneMats> cachePrecompMats;
+    std::vector<Mat4> localTransforms;
+    std::vector<char> visible;
+    std::vector<Mat4> globalTransforms;
+    std::vector<Mat4> projectedTransforms;
+    std::vector<Mat4> normalTransforms;
+    std::vector<int> lights;
 };
 
-JNIEXPORT jlong JNICALL Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_GeoModel_nInitModelCache(
-    JNIEnv *env, jclass clazz, jobject buffer) {
-    char *data = (char *) env->GetDirectBufferAddress(buffer);
-    if (!data) return 0;
+class BufferReader {
+public:
+    BufferReader(const uint8_t *data, jlong capacity) : data(data), capacity(capacity) {
+    }
 
-    NativeModel *model = new NativeModel();
-    int offset = 0;
+    bool readInt(int &value) {
+        return read(&value, sizeof(value));
+    }
 
-    auto readInt = [&]() {
-        int v;
-        std::memcpy(&v, data + offset, 4);
-        offset += 4;
-        return v;
-    };
-    auto readFloat = [&]() {
-        float v;
-        std::memcpy(&v, data + offset, 4);
-        offset += 4;
-        return v;
-    };
-    auto readByte = [&]() {
-        char v = data[offset];
-        offset += 1;
-        return v;
-    };
+    bool readFloat(float &value) {
+        return read(&value, sizeof(value));
+    }
 
-    int boneCount = readInt();
-    model->bones.resize(boneCount);
-    model->cacheLocalTransforms.resize(boneCount);
-    model->cacheVisible.resize(boneCount);
-    model->cachePrecompMats.resize(boneCount);
-    model->fastQuads.reserve(boneCount * 20);
+    bool readByte(uint8_t &value) {
+        return read(&value, sizeof(value));
+    }
+
+private:
+    bool read(void *out, jlong size) {
+        if (offset < 0 || size < 0 || offset + size > capacity) return false;
+        std::memcpy(out, data + offset, static_cast<size_t>(size));
+        offset += size;
+        return true;
+    }
+
+    const uint8_t *data;
+    jlong capacity;
+    jlong offset = 0;
+};
+
+static Vec4 transformPoint(const Mat4 &mat, float x, float y, float z, float w) {
+    return {
+        mat.m[0] * x + mat.m[4] * y + mat.m[8] * z + mat.m[12] * w,
+        mat.m[1] * x + mat.m[5] * y + mat.m[9] * z + mat.m[13] * w,
+        mat.m[2] * x + mat.m[6] * y + mat.m[10] * z + mat.m[14] * w,
+        mat.m[3] * x + mat.m[7] * y + mat.m[11] * z + mat.m[15] * w
+    };
+}
+
+static Vec3 transformNormal(const Mat4 &mat, float x, float y, float z) {
+    Vec3 out {
+        mat.m[0] * x + mat.m[4] * y + mat.m[8] * z,
+        mat.m[1] * x + mat.m[5] * y + mat.m[9] * z,
+        mat.m[2] * x + mat.m[6] * y + mat.m[10] * z
+    };
+    float lenSq = out.x * out.x + out.y * out.y + out.z * out.z;
+    if (lenSq > 1.0e-8f) {
+        float invLen = 1.0f / std::sqrt(lenSq);
+        out.x *= invLen;
+        out.y *= invLen;
+        out.z *= invLen;
+    }
+    return out;
+}
+
+static float cullDeterminant(const NativeQuad &quad, const Mat4 &projectedBoneMat) {
+    Vec4 p0 = transformPoint(projectedBoneMat, quad.x[0], quad.y[0], quad.z[0], 1.0f);
+    Vec4 p1 = transformPoint(projectedBoneMat, quad.x[1], quad.y[1], quad.z[1], 1.0f);
+    Vec4 p2 = transformPoint(projectedBoneMat, quad.x[2], quad.y[2], quad.z[2], 1.0f);
+    return p0.x * (p1.y * p2.w - p2.y * p1.w)
+        - p1.x * (p0.y * p2.w - p2.y * p0.w)
+        + p2.x * (p0.y * p1.w - p1.y * p0.w);
+}
+
+static uint8_t colorByte(float value) {
+    float clamped = std::max(0.0f, std::min(1.0f, value));
+    return static_cast<uint8_t>(clamped * 255.0f);
+}
+
+static int8_t normalByte(float value) {
+    float clamped = std::max(-1.0f, std::min(1.0f, value));
+    return static_cast<int8_t>(clamped * 127.0f);
+}
+
+static bool writePackedVertex(uint8_t *out, jlong capacity, int vertexIndex, const Vec4 &pos, float r, float g, float b,
+                              float a, float u, float v, int overlay, int light, const Vec3 &normal) {
+    jlong offset = static_cast<jlong>(vertexIndex) * PACKED_VERTEX_BYTES;
+    if (offset < 0 || offset + PACKED_VERTEX_BYTES > capacity) return false;
+    std::memcpy(out + offset, &pos.x, 4);
+    std::memcpy(out + offset + 4, &pos.y, 4);
+    std::memcpy(out + offset + 8, &pos.z, 4);
+    out[offset + 12] = colorByte(r);
+    out[offset + 13] = colorByte(g);
+    out[offset + 14] = colorByte(b);
+    out[offset + 15] = colorByte(a);
+    std::memcpy(out + offset + 16, &u, 4);
+    std::memcpy(out + offset + 20, &v, 4);
+    std::memcpy(out + offset + 24, &overlay, 4);
+    std::memcpy(out + offset + 28, &light, 4);
+    out[offset + 32] = static_cast<uint8_t>(normalByte(normal.x));
+    out[offset + 33] = static_cast<uint8_t>(normalByte(normal.y));
+    out[offset + 34] = static_cast<uint8_t>(normalByte(normal.z));
+    out[offset + 35] = 0;
+    return true;
+}
+
+static bool writeFloatVertex(uint8_t *out, jlong capacity, int vertexIndex, const Vec4 &pos, float r, float g, float b,
+                             float a, float u, float v, int overlay, int light, const Vec3 &normal) {
+    jlong offset = static_cast<jlong>(vertexIndex) * FLOAT_VERTEX_BYTES;
+    if (offset < 0 || offset + FLOAT_VERTEX_BYTES > capacity) return false;
+    float values[14] = {
+        pos.x, pos.y, pos.z,
+        r, g, b, a,
+        u, v,
+        0.0f, 0.0f,
+        normal.x, normal.y, normal.z
+    };
+    std::memcpy(out + offset, values, sizeof(values));
+    std::memcpy(out + offset + 9 * 4, &overlay, 4);
+    std::memcpy(out + offset + 10 * 4, &light, 4);
+    return true;
+}
+
+static bool buildEvalOrder(NativeModel *model) {
+    std::vector<char> state(model->bones.size(), 0);
+    std::function<bool(int)> dfs = [&](int idx) {
+        if (idx < 0 || idx >= static_cast<int>(model->bones.size())) return false;
+        if (state[idx] == 1) return false;
+        if (state[idx] == 2) return true;
+        state[idx] = 1;
+        int parent = model->bones[idx].parentIdx;
+        if (parent != -1 && !dfs(parent)) return false;
+        state[idx] = 2;
+        model->evalOrder.push_back(idx);
+        return true;
+    };
+    for (int i = 0; i < static_cast<int>(model->bones.size()); ++i) {
+        if (!dfs(i)) return false;
+    }
+    return true;
+}
+
+static Mat4 buildLocalBoneTransform(const NativeBone &bone, const float *params) {
+    float rx = params[0];
+    float ry = params[1];
+    float rz = params[2];
+    float tx = params[3];
+    float ty = params[4];
+    float tz = params[5];
+    float sx = params[6];
+    float sy = params[7];
+    float sz = params[8];
+
+    float sinX = std::sin(rx);
+    float cosX = std::cos(rx);
+    float sinY = std::sin(ry);
+    float cosY = std::cos(ry);
+    float sinZ = std::sin(rz);
+    float cosZ = std::cos(rz);
+
+    float m00 = cosZ * cosY * sx;
+    float m10 = sinZ * cosY * sx;
+    float m20 = -sinY * sx;
+
+    float m01 = (cosZ * sinY * sinX - sinZ * cosX) * sy;
+    float m11 = (sinZ * sinY * sinX + cosZ * cosX) * sy;
+    float m21 = cosY * sinX * sy;
+
+    float m02 = (cosZ * sinY * cosX + sinZ * sinX) * sz;
+    float m12 = (sinZ * sinY * cosX - cosZ * sinX) * sz;
+    float m22 = cosY * cosX * sz;
+
+    float pivotX = bone.pivotX * 0.0625f;
+    float pivotY = bone.pivotY * 0.0625f;
+    float pivotZ = bone.pivotZ * 0.0625f;
+    float translateX = pivotX - tx * 0.0625f;
+    float translateY = pivotY + ty * 0.0625f;
+    float translateZ = pivotZ + tz * 0.0625f;
+
+    Mat4 out;
+    out.m[0] = m00;
+    out.m[1] = m10;
+    out.m[2] = m20;
+    out.m[4] = m01;
+    out.m[5] = m11;
+    out.m[6] = m21;
+    out.m[8] = m02;
+    out.m[9] = m12;
+    out.m[10] = m22;
+    out.m[12] = translateX - (m00 * pivotX + m01 * pivotY + m02 * pivotZ);
+    out.m[13] = translateY - (m10 * pivotX + m11 * pivotY + m12 * pivotZ);
+    out.m[14] = translateZ - (m20 * pivotX + m21 * pivotY + m22 * pivotZ);
+    return out;
+}
+
+static void updateLocalTransforms(NativeModel *model, const float *anim) {
+    for (int idx : model->evalOrder) {
+        NativeBone &bone = model->bones[idx];
+        char visible = bone.parentIdx == -1 ? 1 : model->visible[bone.parentIdx];
+
+        const float *params = anim + idx * 12;
+        float animSx = params[6];
+        float animSy = params[7];
+        float animSz = params[8];
+
+        if (animSx == 0.0f && animSy == 0.0f && animSz == 0.0f) visible = 0;
+
+        Mat4 local = buildLocalBoneTransform(bone, params);
+        if (bone.parentIdx != -1) {
+            Mat4 parent = model->localTransforms[bone.parentIdx];
+            parent.mul(local);
+            local = parent;
+        }
+        model->localTransforms[idx] = local;
+        model->visible[idx] = visible;
+    }
+}
+
+static void updateGlobalTransforms(NativeModel *model, const Mat4 &rootPoseMat, const Mat4 *rootNormalMat,
+                                   const Mat4 &projMat, int packedLight) {
+    int glowLight = (15 << 4) | (15 << 20);
+    for (size_t i = 0; i < model->bones.size(); ++i) {
+        if (model->visible[i] == 0) continue;
+        Mat4 global = rootPoseMat;
+        global.mul(model->localTransforms[i]);
+        model->globalTransforms[i] = global;
+
+        Mat4 projected = projMat;
+        projected.mul(global);
+        model->projectedTransforms[i] = projected;
+
+        if (rootNormalMat != nullptr) {
+            Mat4 normal = *rootNormalMat;
+            normal.mul(model->localTransforms[i].normalMatrix4x4());
+            model->normalTransforms[i] = normal;
+            model->lights[i] = model->bones[i].glow ? glowLight : packedLight;
+        }
+    }
+}
+}
+
+extern "C" JNIEXPORT jint JNICALL Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nGetNativeAbiVersion(
+    JNIEnv *, jclass) {
+    return ABI_VERSION;
+}
+
+extern "C" JNIEXPORT jstring JNICALL Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nGetNativeBackendName(
+    JNIEnv *env, jclass) {
+    return env->NewStringUTF("scalar");
+}
+
+extern "C" JNIEXPORT jboolean JNICALL Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nSelfTest(
+    JNIEnv *env, jclass, jobject buffer) {
+    if (buffer == nullptr) return JNI_FALSE;
+    void *address = env->GetDirectBufferAddress(buffer);
+    jlong capacity = env->GetDirectBufferCapacity(buffer);
+    if (address == nullptr || capacity < 16) return JNI_FALSE;
+
+    Mat4 identity;
+    Vec4 out = transformPoint(identity, 1.0f, 2.0f, 3.0f, 1.0f);
+    return out.x == 1.0f && out.y == 2.0f && out.z == 3.0f && out.w == 1.0f ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jlong JNICALL Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nInitModelCache(
+    JNIEnv *env, jclass, jobject buffer) {
+    auto *data = static_cast<const uint8_t *>(env->GetDirectBufferAddress(buffer));
+    jlong capacity = env->GetDirectBufferCapacity(buffer);
+    if (data == nullptr || capacity < 4) return 0;
+
+    BufferReader reader(data, capacity);
+    auto *model = new NativeModel();
+    int boneCount = 0;
+    if (!reader.readInt(boneCount) || boneCount <= 0 || boneCount > 4096) {
+        delete model;
+        return 0;
+    }
+
+    model->bones.resize(static_cast<size_t>(boneCount));
+    model->localTransforms.resize(static_cast<size_t>(boneCount));
+    model->visible.resize(static_cast<size_t>(boneCount));
+    model->globalTransforms.resize(static_cast<size_t>(boneCount));
+    model->projectedTransforms.resize(static_cast<size_t>(boneCount));
+    model->normalTransforms.resize(static_cast<size_t>(boneCount));
+    model->lights.resize(static_cast<size_t>(boneCount));
 
     for (int i = 0; i < boneCount; ++i) {
         NativeBone &bone = model->bones[i];
-        bone.parentIdx = readInt();
-        bone.partMask = readInt();
-        bone.glow = readByte() != 0;
-        bone.pivotX = readFloat();
-        bone.pivotY = readFloat();
-        bone.pivotZ = readFloat();
+        uint8_t glow = 0;
+        int cubeCount = 0;
+        if (!reader.readInt(bone.parentIdx)
+            || !reader.readInt(bone.partMask)
+            || !reader.readByte(glow)
+            || !reader.readFloat(bone.pivotX)
+            || !reader.readFloat(bone.pivotY)
+            || !reader.readFloat(bone.pivotZ)
+            || !reader.readInt(cubeCount)) {
+            delete model;
+            return 0;
+        }
+        if (bone.parentIdx < -1 || bone.parentIdx >= boneCount || cubeCount < 0 || cubeCount > 65536) {
+            delete model;
+            return 0;
+        }
+        bone.glow = glow != 0;
 
-        int cubeCount = readInt();
-        for (int j = 0; j < cubeCount; ++j) {
-            bool cullable = readByte() != 0;
-            int quadCount = readInt();
-            for (int k = 0; k < quadCount; ++k) {
-                FastQuad fq;
-                fq.boneIdx = i;
-                fq.cullable = cullable;
-
-                alignas(16) float tmpX[4], tmpY[4], tmpZ[4], tmpU[4], tmpV[4];
+        for (int c = 0; c < cubeCount; ++c) {
+            uint8_t cullable = 0;
+            int quadCount = 0;
+            if (!reader.readByte(cullable) || !reader.readInt(quadCount) || quadCount < 0 || quadCount > 65536) {
+                delete model;
+                return 0;
+            }
+            for (int q = 0; q < quadCount; ++q) {
+                NativeQuad quad {};
+                quad.quadIdx = static_cast<int>(model->quads.size());
+                quad.boneIdx = i;
+                quad.cullable = cullable != 0;
                 for (int v = 0; v < 4; ++v) {
-                    tmpX[v] = readFloat();
-                    tmpY[v] = readFloat();
-                    tmpZ[v] = readFloat();
+                    if (!reader.readFloat(quad.x[v]) || !reader.readFloat(quad.y[v]) || !reader.readFloat(quad.z[v])) {
+                        delete model;
+                        return 0;
+                    }
                 }
                 for (int v = 0; v < 4; ++v) {
-                    tmpU[v] = readFloat();
-                    tmpV[v] = readFloat();
+                    if (!reader.readFloat(quad.u[v]) || !reader.readFloat(quad.v[v])) {
+                        delete model;
+                        return 0;
+                    }
                 }
-                fq.nx = readFloat();
-                fq.ny = readFloat();
-                fq.nz = readFloat();
-
-                fq.x = _mm_load_ps(tmpX);
-                fq.y = _mm_load_ps(tmpY);
-                fq.z = _mm_load_ps(tmpZ);
-                fq.u = _mm_load_ps(tmpU);
-                fq.v = _mm_load_ps(tmpV);
-                model->fastQuads.push_back(fq);
+                if (!reader.readFloat(quad.nx) || !reader.readFloat(quad.ny) || !reader.readFloat(quad.nz)) {
+                    delete model;
+                    return 0;
+                }
+                model->quads.push_back(quad);
             }
         }
     }
-    model->fastQuads.shrink_to_fit();
 
-    std::vector<char> visited(boneCount, 0);
-    std::function<void(int)> dfs = [&](int idx) {
-        if (visited[idx]) return;
-        visited[idx] = 1;
-        if (model->bones[idx].parentIdx != -1) dfs(model->bones[idx].parentIdx);
-        model->evalOrder.push_back(idx);
-    };
-    for (int i = 0; i < boneCount; ++i) dfs(i);
-
+    if (!buildEvalOrder(model)) {
+        delete model;
+        return 0;
+    }
+    model->quads.shrink_to_fit();
     return reinterpret_cast<jlong>(model);
 }
 
-JNIEXPORT void JNICALL Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_GeoModel_nDestroyModelCache(
-    JNIEnv *env, jclass clazz, jlong handle) {
+extern "C" JNIEXPORT void JNICALL Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nDestroyModelCache(
+    JNIEnv *, jclass, jlong handle) {
     delete reinterpret_cast<NativeModel *>(handle);
 }
 
-JNIEXPORT jint JNICALL Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_GeoModel_nComputeModelVertices(
-    JNIEnv *env, jclass clazz, jlong handle,
-    jobject outBuffer, jobject matrixBuffer, jobject animBuffer,
-    jint renderPartMask, jint packedLight, jint packedOverlay,
-    jfloat r, jfloat g, jfloat b, jfloat a,
+extern "C" JNIEXPORT jint JNICALL Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nComputeModelVertices(
+    JNIEnv *env, jclass, jlong handle, jobject outBuffer, jobject matrixBuffer, jobject animBuffer,
+    jint renderPartMask, jint packedLight, jint packedOverlay, jfloat r, jfloat g, jfloat b, jfloat a,
     jboolean packTo36Bytes) {
-    NativeModel *model = reinterpret_cast<NativeModel *>(handle);
-    if (!model || model->fastQuads.empty()) return 0;
+    auto *model = reinterpret_cast<NativeModel *>(handle);
+    if (model == nullptr || model->quads.empty()) return 0;
 
-    uint8_t *outDataRaw = (uint8_t *) env->GetDirectBufferAddress(outBuffer);
-    int vertexCountOut = 0;
-    float *matricesData = (float *) env->GetDirectBufferAddress(matrixBuffer);
-    float *animData = (float *) env->GetDirectBufferAddress(animBuffer);
+    auto *out = static_cast<uint8_t *>(env->GetDirectBufferAddress(outBuffer));
+    auto *matrices = static_cast<float *>(env->GetDirectBufferAddress(matrixBuffer));
+    auto *anim = static_cast<float *>(env->GetDirectBufferAddress(animBuffer));
+    jlong outCapacity = env->GetDirectBufferCapacity(outBuffer);
+    jlong matrixCapacity = env->GetDirectBufferCapacity(matrixBuffer);
+    jlong animCapacity = env->GetDirectBufferCapacity(animBuffer);
+    if (out == nullptr || matrices == nullptr || anim == nullptr) return -1;
+    if (matrixCapacity < 64 * 4 || animCapacity < static_cast<jlong>(model->bones.size()) * 12 * 4) return -2;
 
-    Mat4 rootPoseMat(matricesData);
-    float *rootNormalArr = matricesData + 16;
-    Mat4 projMat(matricesData + 32);
+    Mat4 rootPoseMat(matrices);
+    const float *rootNormalArr = matrices + 16;
+    Mat4 projMat(matrices + 32);
 
     Mat4 rootNormalMat;
     rootNormalMat.m[0] = rootNormalArr[0];
@@ -239,208 +510,91 @@ JNIEXPORT jint JNICALL Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built
     rootNormalMat.m[9] = rootNormalArr[7];
     rootNormalMat.m[10] = rootNormalArr[8];
 
-    Mat4 identityMat;
-    for (int i: model->evalOrder) {
-        NativeBone &bone = model->bones[i];
-        Mat4 parentMatrix = (bone.parentIdx != -1) ? model->cacheLocalTransforms[bone.parentIdx] : identityMat;
-        char isVisible = (bone.parentIdx != -1) ? model->cacheVisible[bone.parentIdx] : 1;
+    updateLocalTransforms(model, anim);
+    updateGlobalTransforms(model, rootPoseMat, &rootNormalMat, projMat, packedLight);
 
-        int pOffset = i * 12;
-        float animRx = animData[pOffset + 0], animRy = animData[pOffset + 1], animRz = animData[pOffset + 2];
-        float animTx = animData[pOffset + 3], animTy = animData[pOffset + 4], animTz = animData[pOffset + 5];
-        float animSx = animData[pOffset + 6], animSy = animData[pOffset + 7], animSz = animData[pOffset + 8];
-
-        if (animSx == 0.0f && animSy == 0.0f && animSz == 0.0f) isVisible = 0;
-
-        float px = bone.pivotX * 0.0625f, py = bone.pivotY * 0.0625f, pz = bone.pivotZ * 0.0625f;
-        float dx = px - animTx * 0.0625f;
-        float dy = py + animTy * 0.0625f;
-        float dz = pz + animTz * 0.0625f;
-
-        float cx, sx, cy, sy, cz, sz;
-        FAST_SINCOS(animRx, &sx, &cx);
-        FAST_SINCOS(animRy, &sy, &cy);
-        FAST_SINCOS(animRz, &sz, &cz);
-
-        Mat4 localMat;
-        localMat.m[0] = (cz * cy) * animSx;
-        localMat.m[1] = (sz * cy) * animSx;
-        localMat.m[2] = (-sy) * animSx;
-        localMat.m[4] = (cz * sy * sx - sz * cx) * animSy;
-        localMat.m[5] = (sz * sy * sx + cz * cx) * animSy;
-        localMat.m[6] = (cy * sx) * animSy;
-        localMat.m[8] = (cz * sy * cx + sz * sx) * animSz;
-        localMat.m[9] = (sz * sy * cx - cz * sx) * animSz;
-        localMat.m[10] = (cy * cx) * animSz;
-
-        localMat.m[12] = dx - (localMat.m[0] * px + localMat.m[4] * py + localMat.m[8] * pz);
-        localMat.m[13] = dy - (localMat.m[1] * px + localMat.m[5] * py + localMat.m[9] * pz);
-        localMat.m[14] = dz - (localMat.m[2] * px + localMat.m[6] * py + localMat.m[10] * pz);
-
-        Mat4 resMat = parentMatrix;
-        resMat.mul(localMat);
-        model->cacheLocalTransforms[i] = resMat;
-        model->cacheVisible[i] = isVisible;
-    }
-
-    int glowLight = (15 << 4) | (15 << 20);
-    size_t boneCount = model->bones.size();
-    for (size_t i = 0; i < boneCount; ++i) {
-        if (model->cacheVisible[i] == 0) continue;
-        Mat4 globalBoneMat = rootPoseMat;
-        globalBoneMat.mul(model->cacheLocalTransforms[i]);
-        Mat4 globalNormalMat = rootNormalMat;
-        globalNormalMat.mul(model->cacheLocalTransforms[i].normalMatrix4x4());
-
-        auto &precomp = model->cachePrecompMats[i];
-        std::memcpy(precomp.gb, globalBoneMat.m, 16 * sizeof(float));
-        precomp.gn_c0 = _mm_loadu_ps(&globalNormalMat.m[0]);
-        precomp.gn_c1 = _mm_loadu_ps(&globalNormalMat.m[4]);
-        precomp.gn_c2 = _mm_loadu_ps(&globalNormalMat.m[8]);
-        precomp.currentLight = model->bones[i].glow ? glowLight : packedLight;
-    }
-
-    __m128 p00 = _mm_set1_ps(projMat.m[0]), p01 = _mm_set1_ps(projMat.m[4]), p02 = _mm_set1_ps(projMat.m[8]), p03 =
-            _mm_set1_ps(projMat.m[12]);
-    __m128 p10 = _mm_set1_ps(projMat.m[1]), p11 = _mm_set1_ps(projMat.m[5]), p12 = _mm_set1_ps(projMat.m[9]), p13 =
-            _mm_set1_ps(projMat.m[13]);
-    __m128 p30 = _mm_set1_ps(projMat.m[3]), p31 = _mm_set1_ps(projMat.m[7]), p32 = _mm_set1_ps(projMat.m[11]), p33 =
-            _mm_set1_ps(projMat.m[15]);
-
-    uint8_t cr = (uint8_t) (r * 255.0f), cg = (uint8_t) (g * 255.0f), cb = (uint8_t) (b * 255.0f), ca = (uint8_t) (
-        a * 255.0f);
-    uint32_t rgba_bits = cr | (cg << 8) | (cb << 16) | (ca << 24);
-    __m128 gRGBA = _mm_set1_ps(*(float *) &rgba_bits);
-    __m128 gOverlay = _mm_set1_ps(*(float *) &packedOverlay);
-
-    for (const auto &fq: model->fastQuads) {
-        int bIdx = fq.boneIdx;
-        if (model->cacheVisible[bIdx] == 0) continue;
-        const NativeBone &bone = model->bones[bIdx];
+    int vertexCount = 0;
+    for (const NativeQuad &quad : model->quads) {
+        int boneIdx = quad.boneIdx;
+        if (model->visible[boneIdx] == 0) continue;
+        const NativeBone &bone = model->bones[boneIdx];
         if (renderPartMask != 0 && bone.partMask != renderPartMask && bone.partMask != 3) continue;
+        const Mat4 &global = model->globalTransforms[boneIdx];
+        if (quad.cullable && cullDeterminant(quad, model->projectedTransforms[boneIdx]) <= CULL_DETERMINANT_EPSILON) continue;
 
-        const auto &pMat = model->cachePrecompMats[bIdx];
-
-        __m128 gX = MADD_PS(_mm_set1_ps(pMat.gb[0]), fq.x,
-                            MADD_PS(_mm_set1_ps(pMat.gb[4]), fq.y, MADD_PS(_mm_set1_ps(pMat.gb[8]), fq.z, _mm_set1_ps(
-                                pMat.gb[12]))));
-        __m128 gY = MADD_PS(_mm_set1_ps(pMat.gb[1]), fq.x,
-                            MADD_PS(_mm_set1_ps(pMat.gb[5]), fq.y, MADD_PS(_mm_set1_ps(pMat.gb[9]), fq.z, _mm_set1_ps(
-                                pMat.gb[13]))));
-        __m128 gZ = MADD_PS(_mm_set1_ps(pMat.gb[2]), fq.x,
-                            MADD_PS(_mm_set1_ps(pMat.gb[6]), fq.y, MADD_PS(_mm_set1_ps(pMat.gb[10]), fq.z, _mm_set1_ps(
-                                pMat.gb[14]))));
-
-        if (fq.cullable) {
-            __m128 pX = MADD_PS(p00, gX, MADD_PS(p01, gY, MADD_PS(p02, gZ, p03)));
-            __m128 pY = MADD_PS(p10, gX, MADD_PS(p11, gY, MADD_PS(p12, gZ, p13)));
-            __m128 pW = MADD_PS(p30, gX, MADD_PS(p31, gY, MADD_PS(p32, gZ, p33)));
-
-            __m128 pY_120 = _mm_shuffle_ps(pY, pY, _MM_SHUFFLE(3, 0, 2, 1));
-            __m128 pW_201 = _mm_shuffle_ps(pW, pW, _MM_SHUFFLE(3, 1, 0, 2));
-            __m128 pY_201 = _mm_shuffle_ps(pY, pY, _MM_SHUFFLE(3, 1, 0, 2));
-            __m128 pW_120 = _mm_shuffle_ps(pW, pW, _MM_SHUFFLE(3, 0, 2, 1));
-
-            __m128 sub = _mm_sub_ps(_mm_mul_ps(pY_120, pW_201), _mm_mul_ps(pY_201, pW_120));
-            __m128 mx = _mm_mul_ps(pX, sub);
-            __m128 mx1 = _mm_shuffle_ps(mx, mx, _MM_SHUFFLE(1, 1, 1, 1));
-            __m128 mx2 = _mm_shuffle_ps(mx, mx, _MM_SHUFFLE(2, 2, 2, 2));
-            __m128 sum = _mm_add_ps(mx, _mm_add_ps(mx1, mx2));
-
-            float det = _mm_cvtss_f32(sum);
-            if (det <= 0.0f) continue;
-        }
-
-        __m128 n_res = MADD_PS(pMat.gn_c0, _mm_set1_ps(fq.nx),
-                               MADD_PS(pMat.gn_c1, _mm_set1_ps(fq.ny), _mm_mul_ps(pMat.gn_c2, _mm_set1_ps(fq.nz))));
-        __m128 dp = _mm_mul_ps(n_res, n_res);
-        __m128 sum = _mm_add_ps(dp, _mm_shuffle_ps(dp, dp, _MM_SHUFFLE(2, 3, 0, 1)));
-        sum = _mm_add_ps(sum, _mm_shuffle_ps(sum, sum, _MM_SHUFFLE(1, 0, 3, 2)));
-        n_res = _mm_mul_ps(n_res, _mm_rsqrt_ps(_mm_max_ps(sum, _mm_set1_ps(1e-8f))));
-
-        alignas(16) float finalNorm[4];
-        _mm_store_ps(finalNorm, n_res);
-        int8_t bnx = (int8_t) (finalNorm[0] * 127.0f), bny = (int8_t) (finalNorm[1] * 127.0f), bnz = (int8_t) (
-            finalNorm[2] * 127.0f);
-        uint32_t norm_bits = (uint8_t) bnx | ((uint8_t) bny << 8) | ((uint8_t) bnz << 16);
-
-        if (packTo36Bytes) {
-            __m128 row0 = gX, row1 = gY, row2 = gZ, row3 = gRGBA;
-            _MM_TRANSPOSE4_PS(row0, row1, row2, row3);
-
-            __m128 gLight = _mm_set1_ps(*(float *) &pMat.currentLight);
-            __m128 row0b = fq.u, row1b = fq.v, row2b = gOverlay, row3b = gLight;
-            _MM_TRANSPOSE4_PS(row0b, row1b, row2b, row3b);
-
-            uint8_t *outPtr = outDataRaw + (vertexCountOut * 36);
-
-            _mm_storeu_ps((float *) (outPtr + 0), row0);
-            _mm_storeu_ps((float *) (outPtr + 16), row0b);
-            *(uint32_t *) (outPtr + 32) = norm_bits;
-            _mm_storeu_ps((float *) (outPtr + 36), row1);
-            _mm_storeu_ps((float *) (outPtr + 52), row1b);
-            *(uint32_t *) (outPtr + 68) = norm_bits;
-            _mm_storeu_ps((float *) (outPtr + 72), row2);
-            _mm_storeu_ps((float *) (outPtr + 88), row2b);
-            *(uint32_t *) (outPtr + 104) = norm_bits;
-            _mm_storeu_ps((float *) (outPtr + 108), row3);
-            _mm_storeu_ps((float *) (outPtr + 124), row3b);
-            *(uint32_t *) (outPtr + 140) = norm_bits;
-
-            vertexCountOut += 4;
-        } else {
-            alignas(16) float fx[4], fy[4], fz[4], fu[4], fv[4];
-            _mm_store_ps(fx, gX);
-            _mm_store_ps(fy, gY);
-            _mm_store_ps(fz, gZ);
-            _mm_store_ps(fu, fq.u);
-            _mm_store_ps(fv, fq.v);
-            float *outFloat = (float *) outDataRaw;
-            for (int v = 0; v < 4; ++v) {
-                int idx = vertexCountOut * 14;
-                outFloat[idx + 0] = fx[v];
-                outFloat[idx + 1] = fy[v];
-                outFloat[idx + 2] = fz[v];
-                outFloat[idx + 3] = r;
-                outFloat[idx + 4] = g;
-                outFloat[idx + 5] = b;
-                outFloat[idx + 6] = a;
-                outFloat[idx + 7] = fu[v];
-                outFloat[idx + 8] = fv[v];
-                outFloat[idx + 9] = *(float *) &packedOverlay;
-                outFloat[idx + 10] = *(float *) &pMat.currentLight;
-                outFloat[idx + 11] = finalNorm[0];
-                outFloat[idx + 12] = finalNorm[1];
-                outFloat[idx + 13] = finalNorm[2];
-                vertexCountOut++;
-            }
+        Vec3 normal = transformNormal(model->normalTransforms[boneIdx], quad.nx, quad.ny, quad.nz);
+        for (int i = 0; i < 4; ++i) {
+            Vec4 pos = transformPoint(global, quad.x[i], quad.y[i], quad.z[i], 1.0f);
+            bool wrote = packTo36Bytes
+                ? writePackedVertex(out, outCapacity, vertexCount, pos, r, g, b, a, quad.u[i], quad.v[i], packedOverlay, model->lights[boneIdx], normal)
+                : writeFloatVertex(out, outCapacity, vertexCount, pos, r, g, b, a, quad.u[i], quad.v[i], packedOverlay, model->lights[boneIdx], normal);
+            if (!wrote) return -3;
+            vertexCount++;
         }
     }
-    return vertexCountOut;
+    return vertexCount;
+}
+
+extern "C" JNIEXPORT jint JNICALL Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nCollectVisibleQuadIds(
+    JNIEnv *env, jclass, jlong handle, jobject outBuffer, jobject matrixBuffer, jobject animBuffer, jint renderPartMask) {
+    auto *model = reinterpret_cast<NativeModel *>(handle);
+    if (model == nullptr || model->quads.empty()) return 0;
+
+    auto *out = static_cast<uint8_t *>(env->GetDirectBufferAddress(outBuffer));
+    auto *matrices = static_cast<float *>(env->GetDirectBufferAddress(matrixBuffer));
+    auto *anim = static_cast<float *>(env->GetDirectBufferAddress(animBuffer));
+    jlong outCapacity = env->GetDirectBufferCapacity(outBuffer);
+    jlong matrixCapacity = env->GetDirectBufferCapacity(matrixBuffer);
+    jlong animCapacity = env->GetDirectBufferCapacity(animBuffer);
+    if (out == nullptr || matrices == nullptr || anim == nullptr) return -1;
+    if (matrixCapacity < 64 * 4 || animCapacity < static_cast<jlong>(model->bones.size()) * 12 * 4) return -2;
+
+    Mat4 rootPoseMat(matrices);
+    Mat4 projMat(matrices + 32);
+
+    updateLocalTransforms(model, anim);
+    updateGlobalTransforms(model, rootPoseMat, nullptr, projMat, 0);
+
+    int quadCount = 0;
+    for (const NativeQuad &quad : model->quads) {
+        int boneIdx = quad.boneIdx;
+        if (model->visible[boneIdx] == 0) continue;
+        const NativeBone &bone = model->bones[boneIdx];
+        if (renderPartMask != 0 && bone.partMask != renderPartMask && bone.partMask != 3) continue;
+        if (quad.cullable && cullDeterminant(quad, model->projectedTransforms[boneIdx]) <= CULL_DETERMINANT_EPSILON) continue;
+
+        jlong offset = static_cast<jlong>(quadCount) * 4;
+        if (offset < 0 || offset + 4 > outCapacity) return -3;
+        std::memcpy(out + offset, &quad.quadIdx, 4);
+        quadCount++;
+    }
+    return quadCount;
 }
 
 static const JNINativeMethod gMethods[] = {
-    {
-        (char *) "nInitModelCache", (char *) "(Ljava/nio/ByteBuffer;)J",
-        reinterpret_cast<void *>(Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_GeoModel_nInitModelCache)
-    },
-    {
-        (char *) "nDestroyModelCache", (char *) "(J)V",
-        reinterpret_cast<void *>(Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_GeoModel_nDestroyModelCache)
-    },
-    {
-        (char *) "nComputeModelVertices",
-        (char *) "(JLjava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIIFFFFZ)I",
-        reinterpret_cast<void *>(
-            Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_GeoModel_nComputeModelVertices)
-    }
+    {(char *) "nGetNativeAbiVersion", (char *) "()I",
+     reinterpret_cast<void *>(Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nGetNativeAbiVersion)},
+    {(char *) "nGetNativeBackendName", (char *) "()Ljava/lang/String;",
+     reinterpret_cast<void *>(Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nGetNativeBackendName)},
+    {(char *) "nSelfTest", (char *) "(Ljava/nio/ByteBuffer;)Z",
+     reinterpret_cast<void *>(Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nSelfTest)},
+    {(char *) "nInitModelCache", (char *) "(Ljava/nio/ByteBuffer;)J",
+     reinterpret_cast<void *>(Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nInitModelCache)},
+    {(char *) "nDestroyModelCache", (char *) "(J)V",
+     reinterpret_cast<void *>(Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nDestroyModelCache)},
+    {(char *) "nComputeModelVertices", (char *) "(JLjava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;IIIFFFFZ)I",
+     reinterpret_cast<void *>(Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nComputeModelVertices)},
+    {(char *) "nCollectVisibleQuadIds", (char *) "(JLjava/nio/ByteBuffer;Ljava/nio/ByteBuffer;Ljava/nio/ByteBuffer;I)I",
+     reinterpret_cast<void *>(Java_com_elfmcys_yesstevemodel_geckolib3_geo_render_built_NativeModelCache_nCollectVisibleQuadIds)}
 };
 
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
+extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *) {
     JNIEnv *env = nullptr;
     if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK) return JNI_ERR;
-    jclass clazz = env->FindClass("com/elfmcys/yesstevemodel/geckolib3/geo/render/built/GeoModel");
+    jclass clazz = env->FindClass("com/elfmcys/yesstevemodel/geckolib3/geo/render/built/NativeModelCache");
     if (clazz == nullptr) return JNI_ERR;
-    if (env->RegisterNatives(clazz, gMethods, 3) < 0) return JNI_ERR;
+    if (env->RegisterNatives(clazz, gMethods, static_cast<jint>(sizeof(gMethods) / sizeof(gMethods[0]))) < 0) {
+        return JNI_ERR;
+    }
     return JNI_VERSION_1_6;
 }

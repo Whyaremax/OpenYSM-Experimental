@@ -7,6 +7,15 @@ project(ysm-core C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" YSM_SYSTEM_PROCESSOR)
+if(YSM_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|i[3-6]86)$")
+    set(YSM_NATIVE_CPU_FAMILY "x86")
+elseif(YSM_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|armv8)")
+    set(YSM_NATIVE_CPU_FAMILY "arm64")
+else()
+    set(YSM_NATIVE_CPU_FAMILY "scalar")
+endif()
+
 find_package(JNI)
 
 include_directories(src/main/native)
@@ -48,24 +57,18 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/YSMParser/YSMParser")
     target_include_directories(ysm-core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/YSMParser/YSMParser)
 endif()
 
+target_compile_definitions(ysm-core PRIVATE YSM_NATIVE_BACKEND_SCALAR=1)
+
 if(MSVC)
     target_compile_options(ysm-core PRIVATE
             /O2
-            /arch:AVX2
             /W3
     )
-    target_compile_definitions(ysm-core PRIVATE __FMA__)
 else()
     target_compile_options(ysm-core PRIVATE
             -O3
             -fPIC
     )
-
-    if(ANDROID)
-        target_compile_options(ysm-core PRIVATE -mfloat-abi=softfp -mfpu=neon)
-    else()
-        target_compile_options(ysm-core PRIVATE -mavx2 -mfma)
-    endif()
 endif()
 
 if(APPLE)
