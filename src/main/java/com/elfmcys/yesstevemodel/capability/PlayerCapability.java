@@ -2,8 +2,7 @@ package com.elfmcys.yesstevemodel.capability;
 
 import com.elfmcys.yesstevemodel.client.animation.molang.struct.RoamingStruct;
 import com.elfmcys.yesstevemodel.client.animation.molang.struct.RoamingSyncBatch;
-import com.elfmcys.yesstevemodel.client.compat.bettercombat.BetterCombatCompat;
-import com.elfmcys.yesstevemodel.client.compat.firstperson.FirstPersonCompat;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.client.entity.PlayerEntityFrameState;
 import com.elfmcys.yesstevemodel.client.entity.LivingAnimatable;
 import com.elfmcys.yesstevemodel.client.model.ModelAssembly;
@@ -99,15 +98,15 @@ public final class PlayerCapability extends CustomPlayerEntity {
     public void applyHeadTracking(AnimationEvent<? extends AnimatableEntity<Player>> event, boolean z) {
         super.applyHeadTracking(event, z);
         AnimatedGeoModel model2 = getCurrentModel();
-        if (model2 != null && isLocalPlayerModel() && !event.isFirstPerson() && FirstPersonCompat.isLoaded()) {
+        if (model2 != null && isLocalPlayerModel() && !event.isFirstPerson() && YsmClientCompat.isFirstPersonCompatLoaded()) {
             if (model2.allHeadBone() != null) {
-                model2.allHeadBone().setHidden(FirstPersonCompat.shouldHideHead());
+                model2.allHeadBone().setHidden(YsmClientCompat.shouldHideHead());
             }
             if (model2.viewLocatorBone() != null) {
-                FirstPersonCompat.setCameraDistance(model2.viewLocatorBone().getPivotY() * getWidthScale());
+                YsmClientCompat.setCameraDistance(model2.viewLocatorBone().getPivotY() * getWidthScale());
             } else if (z && !model2.headBones().isEmpty()) {
                 IBone bone = model2.headBones().get(model2.headBones().size() - 1);
-                FirstPersonCompat.setCameraDistance(bone == null ? 24.0f : bone.getPivotY() * getWidthScale());
+                YsmClientCompat.setCameraDistance(bone == null ? 24.0f : bone.getPivotY() * getWidthScale());
             }
         }
     }
@@ -117,7 +116,7 @@ public final class PlayerCapability extends CustomPlayerEntity {
         super.resetHeadTracking(wasAnimEvaluated);
         AnimatedGeoModel model2 = getCurrentModel();
         if (model2 != null && isLocalPlayerModel()) {
-            if ((FirstPersonCompat.isLoaded() || BetterCombatCompat.isLoaded()) && model2.allHeadBone() != null) {
+            if (YsmClientCompat.isFirstPersonCompatLoaded() && model2.allHeadBone() != null) {
                 model2.allHeadBone().setHidden(false);
             }
         }

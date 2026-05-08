@@ -3,7 +3,7 @@ package com.elfmcys.yesstevemodel.geckolib3.core.molang.builtin;
 import com.elfmcys.yesstevemodel.capability.PlayerCapability;
 import com.elfmcys.yesstevemodel.geckolib3.core.controller.AnimationControllerContext;
 import com.elfmcys.yesstevemodel.audio.PlaybackFlags;
-import com.elfmcys.yesstevemodel.client.compat.cosmeticarmorreworked.CosmeticArmorHelper;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.client.entity.PlayerEntityFrameState;
 import com.elfmcys.yesstevemodel.geckolib3.core.AnimatableEntity;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.binding.ContextBinding;
@@ -158,7 +158,7 @@ public class QueryBinding extends ContextBinding {
     private static int getEquipmentCount(LivingEntity entity) {
         int i = 0;
         for (EquipmentSlot equipmentSlot : EquipmentSlot.values()) {
-            if (equipmentSlot.isArmor() && !CosmeticArmorHelper.getArmorItem(entity, equipmentSlot).isEmpty()) {
+            if (equipmentSlot.isArmor() && !YsmClientCompat.getArmorItem(entity, equipmentSlot).isEmpty()) {
                 i++;
             }
         }

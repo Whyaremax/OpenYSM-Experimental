@@ -1,7 +1,7 @@
 package com.elfmcys.yesstevemodel.client.animation.predicate;
 
 import com.elfmcys.yesstevemodel.client.animation.IAnimationPredicate;
-import com.elfmcys.yesstevemodel.client.compat.cosmeticarmorreworked.CosmeticArmorHelper;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.client.entity.LivingAnimatable;
 import com.elfmcys.yesstevemodel.client.animation.condition.ConditionArmor;
 import com.elfmcys.yesstevemodel.geckolib3.core.builder.ILoopType;
@@ -27,7 +27,7 @@ public class ArmorPredicate implements IAnimationPredicate<LivingAnimatable<?>> 
         if (entity == null || (event.getAnimatable() instanceof IPreviewAnimatable)) {
             return PlayState.STOP;
         }
-        if (CosmeticArmorHelper.getArmorItem(entity, this.slot).isEmpty()) {
+        if (YsmClientCompat.getArmorItem(entity, this.slot).isEmpty()) {
             return PlayState.STOP;
         }
         ConditionArmor conditionArmor = event.getAnimatable().getModelConfig().getArmor();

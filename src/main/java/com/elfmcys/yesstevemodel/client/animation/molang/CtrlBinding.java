@@ -3,18 +3,12 @@ package com.elfmcys.yesstevemodel.client.animation.molang;
 import com.elfmcys.yesstevemodel.capability.PlayerCapability;
 import com.elfmcys.yesstevemodel.client.animation.Priority;
 import com.elfmcys.yesstevemodel.client.compat.immersivemelodies.ImmersiveMelodiesCompat;
-import com.elfmcys.yesstevemodel.client.compat.ironsspellbooks.SpellbooksCompat;
 import com.elfmcys.yesstevemodel.geckolib3.core.controller.controllers.PlayerAnimationController;
 import com.elfmcys.yesstevemodel.client.animation.molang.functions.ctrl.*;
-import com.elfmcys.yesstevemodel.client.compat.sbackpack.SBackpackCompat;
 import com.elfmcys.yesstevemodel.client.entity.CustomPlayerEntity;
 import com.elfmcys.yesstevemodel.client.animation.molang.functions.ctrl.HandRenderFunction;
 import com.elfmcys.yesstevemodel.client.compat.gun.tacz.TacCompat;
-import com.elfmcys.yesstevemodel.client.compat.bettercombat.BetterCombatCompat;
-import com.elfmcys.yesstevemodel.client.compat.carryon.CarryOnCompat;
-import com.elfmcys.yesstevemodel.client.compat.parcool.ParcoolCompat;
 import com.elfmcys.yesstevemodel.client.compat.slashblade.SlashBladeCompat;
-import com.elfmcys.yesstevemodel.client.compat.swem.SWEMCompat;
 import com.elfmcys.yesstevemodel.geckolib3.core.AnimatableEntity;
 import com.elfmcys.yesstevemodel.geckolib3.core.enums.AnimationState;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.binding.ContextBinding;
@@ -23,7 +17,6 @@ import com.elfmcys.yesstevemodel.geckolib3.core.molang.util.StringPool;
 import com.elfmcys.yesstevemodel.client.entity.IPreviewAnimatable;
 import com.elfmcys.yesstevemodel.geckolib3.core.EntityFrameStateTracker;
 import com.elfmcys.yesstevemodel.util.data.LazySupplier;
-import com.elfmcys.yesstevemodel.client.compat.create.CreateCompat;
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
@@ -66,16 +59,18 @@ public class CtrlBinding extends ContextBinding {
         function("use", HandRenderFunction.createWhenUsing());
         function("armor", Armor.create());
         function("ride", Ride.create());
-        CarryOnCompat.registerBindings(this);
+        livingEntityVar("carryon_type", ctx -> StringPool.EMPTY);
+        livingEntityVar("carryon_is_princess", ctx -> false);
         TacCompat.registerControllerFunctions(this);
-        SWEMCompat.registerControllerFunctions(this);
-        ParcoolCompat.registerBindings(this);
+        livingEntityVar("swem_is_ride", ctx -> false);
+        livingEntityVar("swem_state", ctx -> StringPool.EMPTY);
+        livingEntityVar("parcool_state", ctx -> StringPool.EMPTY);
         SlashBladeCompat.registerControllerFunctions(this);
-        SBackpackCompat.registerControllerFunctions(this);
-        CreateCompat.registerCreateFunctions(this);
-        BetterCombatCompat.registerBindings(this);
+        livingEntityVar("has_sophisticated_backpack", ctx -> false);
+        playerEntityVar("create_hanging_skyhook", ctx -> false);
+        clientPlayerEntityVar("bcombat_attack_animation", ctx -> StringPool.EMPTY);
         ImmersiveMelodiesCompat.registerBindings(this);
-        SpellbooksCompat.registerBindings(this);
+        clientPlayerEntityVar("iss_animation", ctx -> StringPool.EMPTY);
         constValue("state_continue", 2);
         constValue("state_stop", 3);
         constValue("state_pause", 4);
@@ -120,10 +115,6 @@ public class CtrlBinding extends ContextBinding {
             return name.equals(positionTracker.getCachedModelId());
         }
         if (context.geoInstance() instanceof IPreviewAnimatable) {
-            positionTracker.setCachedModelId(StringPool.EMPTY);
-            return false;
-        }
-        if ((livingEntity instanceof Player) && ParcoolCompat.isPlayerParcooling((Player) livingEntity)) {
             positionTracker.setCachedModelId(StringPool.EMPTY);
             return false;
         }

@@ -1,6 +1,6 @@
 package com.elfmcys.yesstevemodel.client.animation.molang.functions.ysm;
 
-import com.elfmcys.yesstevemodel.client.compat.cosmeticarmorreworked.CosmeticArmorHelper;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.context.IContext;
 import com.elfmcys.yesstevemodel.geckolib3.core.molang.funciton.entity.LivingEntityFunction;
 import com.elfmcys.yesstevemodel.geckolib3.util.MolangUtils;
@@ -25,7 +25,7 @@ public class DumpEquippedItem extends LivingEntityFunction {
         if (!context.entity().isDebugMode() || (slot = MolangUtils.parseSlotType(context.entity(), arguments.getAsString(context, 0))) == null) {
             return null;
         }
-        ItemStack stack = CosmeticArmorHelper.getArmorItem(context.entity().entity(), slot);
+        ItemStack stack = YsmClientCompat.getArmorItem(context.entity().entity(), slot);
         if (stack.isEmpty() || (key = ForgeRegistries.ITEMS.getKey(stack.getItem())) == null) {
             return null;
         }

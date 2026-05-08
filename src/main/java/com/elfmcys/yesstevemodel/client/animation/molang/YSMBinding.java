@@ -4,7 +4,7 @@ import com.elfmcys.yesstevemodel.capability.PlayerCapability;
 import com.elfmcys.yesstevemodel.client.compat.touhoulittlemaid.TouhouLittleMaidCompat;
 import com.elfmcys.yesstevemodel.util.accessors.ProjectileStateAccessor;
 import com.elfmcys.yesstevemodel.client.animation.molang.functions.ysm.*;
-import com.elfmcys.yesstevemodel.client.compat.cosmeticarmorreworked.CosmeticArmorHelper;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.client.compat.curios.CuriosCompat;
 import com.elfmcys.yesstevemodel.client.renderer.ModelPreviewRenderer;
 import com.elfmcys.yesstevemodel.geckolib3.core.AnimatableEntity;
@@ -111,7 +111,7 @@ public class YSMBinding extends ContextBinding {
         livingEntityVar("has_boots", ctx -> hasEquipment(ctx.entity(), EquipmentSlot.FEET));
         livingEntityVar("has_mainhand", ctx -> hasEquipment(ctx.entity(), EquipmentSlot.MAINHAND));
         livingEntityVar("has_offhand", ctx -> hasEquipment(ctx.entity(), EquipmentSlot.OFFHAND));
-        livingEntityVar("has_elytra", ctx -> !CosmeticArmorHelper.getElytraItem(ctx.entity()).isEmpty());
+        livingEntityVar("has_elytra", ctx -> !YsmClientCompat.getElytraItem(ctx.entity()).isEmpty());
         livingEntityVar("is_riptide", ctx -> ctx.entity().isAutoSpinAttack());
         livingEntityVar("armor_value", ctx -> ctx.entity().getArmorValue());
         livingEntityVar("hurt_time", ctx -> ctx.entity().hurtTime);
@@ -345,7 +345,7 @@ public class YSMBinding extends ContextBinding {
     }
 
     private static boolean hasEquipment(LivingEntity livingEntity, EquipmentSlot equipmentSlot) {
-        return !CosmeticArmorHelper.getArmorItem(livingEntity, equipmentSlot).isEmpty();
+        return !YsmClientCompat.getArmorItem(livingEntity, equipmentSlot).isEmpty();
     }
 
     private static int getWeather(ClientLevel clientLevel) {

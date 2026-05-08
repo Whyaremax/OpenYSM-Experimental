@@ -2,9 +2,7 @@ package com.elfmcys.yesstevemodel.client.event;
 
 import com.elfmcys.yesstevemodel.YesSteveModel;
 import com.elfmcys.yesstevemodel.capability.PlayerCapabilityProvider;
-import com.elfmcys.yesstevemodel.client.compat.firstperson.FirstPersonCompat;
-import com.elfmcys.yesstevemodel.client.compat.playeranimator.PlayerAnimatorCompat;
-import com.elfmcys.yesstevemodel.client.compat.realcamera.RealCameraCompat;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.client.renderer.RendererManager;
 import com.elfmcys.yesstevemodel.config.GeneralConfig;
 import com.elfmcys.yesstevemodel.util.CameraUtil;
@@ -33,7 +31,7 @@ public class ReplacePlayerRenderEvent {
         }
         com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
             if (cap.isModelActive()) {
-                if (!CameraUtil.isFirstPerson(cap) || FirstPersonCompat.isFirstPersonActive() || RealCameraCompat.isActive() || GeneralConfig.DISABLE_EXTERNAL_FP_ANIM.get().booleanValue() || !PlayerAnimatorCompat.isPlayerAnimated(localPlayer)) {
+                if (!CameraUtil.isFirstPerson(cap) || YsmClientCompat.isFirstPersonActive() || YsmClientCompat.isRealCameraActive() || GeneralConfig.DISABLE_EXTERNAL_FP_ANIM.get().booleanValue() || !YsmClientCompat.isPlayerAnimatorAnimated(localPlayer)) {
                     event.setCanceled(true);
                     RendererManager.getPlayerRenderer().render(event.getEntity(), event.getEntity().getYRot(), event.getPartialTick(), event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight());
                 }

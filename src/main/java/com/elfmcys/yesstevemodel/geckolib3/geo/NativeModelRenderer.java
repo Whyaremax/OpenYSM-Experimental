@@ -2,8 +2,7 @@ package com.elfmcys.yesstevemodel.geckolib3.geo;
 
 import com.elfmcys.yesstevemodel.NativeLibLoader;
 import com.elfmcys.yesstevemodel.YesSteveModel;
-import com.elfmcys.yesstevemodel.client.compat.oculus.OculusCompat;
-import com.elfmcys.yesstevemodel.client.compat.optifine.OptiFineDetector;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.elfmcys.yesstevemodel.config.GeneralConfig;
 import com.elfmcys.yesstevemodel.config.NativeAccelerationMode;
 import com.elfmcys.yesstevemodel.geckolib3.geo.render.built.*;
@@ -54,8 +53,8 @@ public class NativeModelRenderer {
     }
 
     public static void renderMesh(VertexConsumer buffer, PoseStack.Pose pose, GeoModel model, float[] boneParams, float[] stateBuffer, int textureIndex, int renderPartMask, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
-        OculusCompat.updatePBRState();
-        boolean optifinePresent = OptiFineDetector.isOptifinePresent();
+        YsmClientCompat.updatePbrState();
+        boolean optifinePresent = YsmClientCompat.isOptifinePresent();
         boolean compatibilityRendererEnabled = GeneralConfig.USE_COMPATIBILITY_RENDERER.get();
         boolean isCompatMode = optifinePresent || compatibilityRendererEnabled;
         boolean blockedByCompatMode = isCompatMode && !allowCompatNativeRenderer;
@@ -137,7 +136,7 @@ public class NativeModelRenderer {
                 skippedNoLib,
                 skippedDisabled,
                 skippedNoCache,
-                OptiFineDetector.isOptifinePresent(),
+                YsmClientCompat.isOptifinePresent(),
                 GeneralConfig.USE_COMPATIBILITY_RENDERER.get(),
                 allowCompatNativeRenderer,
                 nativeStats,

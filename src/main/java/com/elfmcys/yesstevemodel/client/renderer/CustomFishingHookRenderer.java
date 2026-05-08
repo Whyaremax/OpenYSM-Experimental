@@ -1,7 +1,7 @@
 package com.elfmcys.yesstevemodel.client.renderer;
 
 import com.elfmcys.yesstevemodel.capability.ProjectileCapabilityProvider;
-import com.elfmcys.yesstevemodel.client.compat.oculus.OculusCompat;
+import com.elfmcys.yesstevemodel.client.compatibility.YsmClientCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -73,7 +73,7 @@ public class CustomFishingHookRenderer {
         for (int size = 0; size <= 16; size++) {
             stringVertex(startX, startY, startZ, buffer, poseLast, fraction(size), fraction(size + 1), color[0], color[1], color[2]);
         }
-        if (OculusCompat.isLoaded()) {
+        if (YsmClientCompat.isOculusLoaded()) {
             buffer.vertex(0.0d, 0.0d, 0.0d).color(0, 0, 0, 255).normal(0.0f, 0.0f, 0.0f).endVertex();
         }
     }
