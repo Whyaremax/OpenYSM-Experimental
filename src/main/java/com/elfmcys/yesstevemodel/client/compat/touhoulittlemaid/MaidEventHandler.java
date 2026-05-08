@@ -46,7 +46,7 @@ public class MaidEventHandler {
         if (!(entity instanceof EntityMaid entityMaid)) {
             return false;
         }
-        return entityMaid.getCapability(MaidCapabilityProvider.MAID_CAP).isPresent() && entityMaid.isYsmModel();
+        return com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entityMaid, MaidCapabilityProvider.MAID_CAP).isPresent() && entityMaid.isYsmModel();
     }
 
     public static boolean isChair(Entity entity) {
@@ -69,7 +69,7 @@ public class MaidEventHandler {
     }
 
     public static void setExtraRenderFlag(LivingEntity livingEntity) {
-        livingEntity.getCapability(MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(livingEntity, MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
             cap.setExtraRenderFlag(true);
         });
     }

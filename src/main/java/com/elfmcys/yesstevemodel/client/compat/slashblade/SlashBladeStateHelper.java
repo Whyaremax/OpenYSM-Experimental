@@ -42,7 +42,7 @@ public class SlashBladeStateHelper {
         if (!SlashBladeCompat.isSlashBladeItem(itemStack)) {
             return StringPool.EMPTY;
         }
-        return itemStack.getCapability(CapabilitySlashBlade.BLADESTATE).map(iSlashBladeState -> {
+        return com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(itemStack, CapabilitySlashBlade.BLADESTATE).map(iSlashBladeState -> {
             long gameTime = (livingEntity.level().getGameTime() - iSlashBladeState.getLastActionTime()) * 50;
             if (SlashBladeCompat.hasNewApi()) {
                 return SlashBladeComboHelper.getComboState(iSlashBladeState, gameTime, livingEntity);

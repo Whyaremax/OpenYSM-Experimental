@@ -62,7 +62,7 @@ public class S2CSyncVehicleModelPacket {
 
     @OnlyIn(Dist.CLIENT)
     public static void handleCapability(Entity entity, VehicleModelCapability capability, Int2FloatOpenHashMap floatMap) {
-        entity.getCapability(ClientLazyCapabilityProvider.CLIENT_LAZY_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, ClientLazyCapabilityProvider.CLIENT_LAZY_CAP).ifPresent(cap -> {
             VehicleCapability vehicleCapability = cap.getEntityRenderProvider().getOrCreateCapability();
             vehicleCapability.setOwnerModelId(capability.getOwnerModelId());
             vehicleCapability.setFloatMap(floatMap);

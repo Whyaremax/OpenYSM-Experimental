@@ -172,7 +172,7 @@ public class PlayerModelScreen extends Screen implements IGuiWidget {
             this.filteredPacks = buildFilteredPackMap();
         }
         if (this.category == Category.AUTH) {
-            localPlayer.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(cap -> {
                 for (Map.Entry<String, ModelAssembly> entry : ClientModelManager.getModelAssemblyMap().entrySet()) {
                     if (cap.containsModel(entry.getKey()) || !entry.getValue().getTextureRegistry().isAuthModel()) {
                         this.filteredModels.put(entry.getKey(), entry.getValue());
@@ -181,7 +181,7 @@ public class PlayerModelScreen extends Screen implements IGuiWidget {
             });
         }
         if (this.category == Category.STAR) {
-            localPlayer.getCapability(StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap2 -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap2 -> {
                 for (Map.Entry<String, ModelAssembly> entry : ClientModelManager.getModelAssemblyMap().entrySet()) {
                     if (cap2.containsModel(entry.getKey())) {
                         this.filteredModels.put(entry.getKey(), entry.getValue());
@@ -325,7 +325,7 @@ public class PlayerModelScreen extends Screen implements IGuiWidget {
             value = this.searchBox.getValue();
             zIsFocused = this.searchBox.isFocused();
         }
-        this.searchBox = new EditBox(getMinecraft().font, this.guiLeft + 144, this.guiTop + 6, 140, 16, Component.literal("YSM Search Box"));
+        this.searchBox = new EditBox(this.minecraft.font, this.guiLeft + 144, this.guiTop + 6, 140, 16, Component.literal("YSM Search Box"));
         this.searchBox.setValue(value);
         this.searchBox.setTextColor(15986656);
         this.searchBox.setFocused(zIsFocused);
@@ -333,7 +333,7 @@ public class PlayerModelScreen extends Screen implements IGuiWidget {
         addWidget(this.searchBox);
         addRenderableWidget(new IconButton(this.guiLeft + 5, this.guiTop + 5, 20, 20, 80, 16, button -> {
             if (Minecraft.getInstance().player != null) {
-                Minecraft.getInstance().player.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(Minecraft.getInstance().player, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                     ModelAssembly modelAssembly = cap.getModelAssembly();
                     if (modelAssembly.getModelData().getExtraInfo() != null) {
                         Minecraft.getInstance().setScreen(createModelInfoScreen(this, modelAssembly));
@@ -343,7 +343,7 @@ public class PlayerModelScreen extends Screen implements IGuiWidget {
         })).setTooltipText("gui.yes_steve_model.model.info");
         addRenderableWidget(new IconButton(this.guiLeft + 28, this.guiTop + 5, 79, 20, 32, 16, button2 -> {
             if (Minecraft.getInstance().player != null) {
-                Minecraft.getInstance().player.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(Minecraft.getInstance().player, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                     Minecraft.getInstance().setScreen(createTextureScreen(this, cap.getModelId(), cap.getModelAssembly()));
                 });
             }
@@ -383,13 +383,13 @@ public class PlayerModelScreen extends Screen implements IGuiWidget {
             }
         }).setTooltipText("gui.yes_steve_model.star_models"));
         addRenderableWidget(new IconButton(this.guiLeft + 397, this.guiTop + 5, 18, 18, 16, 16, button7 -> {
-            getMinecraft().setScreen(new ExtraPlayerConfigScreen(this));
+            this.minecraft.setScreen(new ExtraPlayerConfigScreen(this));
         }).setTooltipText("gui.yes_steve_model.config"));
         addRenderableWidget(new IconButton(this.guiLeft + 377, this.guiTop + 5, 18, 18, 0, 16, button8 -> {
             ModScreenEvent.openScreen(this);
         }).setTooltipText("gui.yes_steve_model.download"));
         addRenderableWidget(new IconButton(this.guiLeft + 357, this.guiTop + 5, 18, 18, 80, 0, button9 -> {
-            getMinecraft().setScreen(new OpenModelFolderScreen(this));
+            this.minecraft.setScreen(new OpenModelFolderScreen(this));
         }).setTooltipText("gui.yes_steve_model.open_model_folder.open"));
         addRenderableWidget(new FlatColorButton(this.guiLeft + 198, this.guiTop + 215, 52, 14, Component.translatable("gui.yes_steve_model.pre_page"), button10 -> {
             int i4 = getCurrentPage();
@@ -408,7 +408,7 @@ public class PlayerModelScreen extends Screen implements IGuiWidget {
         if (this.minecraft == null || this.minecraft.player == null) {
             return;
         }
-        LazyOptional<AuthModelsCapability> capability = this.minecraft.player.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP);
+        LazyOptional<AuthModelsCapability> capability = com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(this.minecraft.player, AuthModelsCapabilityProvider.AUTH_MODELS_CAP);
         for (int i = 0; i < 10; i++) {
             int i4 = i + (getCurrentPage() * 10);
             int i2 = this.guiLeft + 143 + (55 * (i % 5));
@@ -471,17 +471,17 @@ public class PlayerModelScreen extends Screen implements IGuiWidget {
         }
         renderSyncStatus(guiGraphics);
         super.render(guiGraphics, i, i2, f);
-        this.renderables.stream().filter(renderable -> {
+        this.children().stream().filter(renderable -> {
             return renderable instanceof IconButton;
         }).forEach(renderable2 -> {
             ((IconButton) renderable2).renderTooltip(guiGraphics, this, i, i2);
         });
-        this.renderables.stream().filter(renderable3 -> {
+        this.children().stream().filter(renderable3 -> {
             return renderable3 instanceof ModelButton;
         }).forEach(renderable4 -> {
             ((ModelButton) renderable4).renderTooltip(guiGraphics, this, i, i2);
         });
-        this.renderables.stream().filter(renderable5 -> {
+        this.children().stream().filter(renderable5 -> {
             return renderable5 instanceof PackIconButton;
         }).forEach(renderable6 -> {
             ((PackIconButton) renderable6).renderDescription(guiGraphics, this, i, i2);
@@ -535,7 +535,7 @@ public class PlayerModelScreen extends Screen implements IGuiWidget {
             InventoryScreen.renderEntityInInventoryFollowsMouse(guiGraphics, this.guiLeft + 67, this.guiTop + 190, 70, (this.guiLeft + 67) - i, ((this.guiTop + 180) - 95) - i2, localPlayer);
             guiGraphics.pose().popPose();
             RenderSystem.disableScissor();
-            localPlayer.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                 List<FormattedCharSequence> listSplit = this.font.split(FormattedText.of(ClientModelManager.getModelContext(cap.getModelId()).map(it -> {
                     Metadata metadata2 = it.getModelData().getExtraInfo();
                     if (metadata2 != null) {
@@ -661,12 +661,12 @@ public class PlayerModelScreen extends Screen implements IGuiWidget {
         int i = getCurrentPage();
         if (d > 0.0d && i > 0) {
             setCurrentPage(i - 1);
-            getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
             init();
         }
         if (d < 0.0d && i < this.maxPage) {
             setCurrentPage(i + 1);
-            getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
             init();
             return true;
         }

@@ -1,8 +1,8 @@
 package com.elfmcys.yesstevemodel.util;
 
 import com.elfmcys.yesstevemodel.YesSteveModel;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 
@@ -33,6 +33,6 @@ public class ItemTagsConstants {
     public static final TagKey<Item> SLASHBLADE = createTag("slashblade");
 
     private static TagKey<Item> createTag(String str) {
-        return ItemTags.create(ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, str));
+        return TagKey.create(Registries.ITEM, new ResourceLocation(YesSteveModel.MOD_ID, str));
     }
 }

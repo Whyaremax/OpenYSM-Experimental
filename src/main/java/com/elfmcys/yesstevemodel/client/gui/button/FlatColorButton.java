@@ -33,7 +33,7 @@ public class FlatColorButton extends Button {
 
     public void renderTooltip(GuiGraphics guiGraphics, Screen screen, int i, int i2) {
         if (this.isHovered && this.tooltip != null) {
-            guiGraphics.renderComponentTooltip(screen.getMinecraft().font, this.tooltip, i, i2);
+            guiGraphics.renderComponentTooltip(net.minecraft.client.Minecraft.getInstance().font, this.tooltip, i, i2);
         }
     }
 

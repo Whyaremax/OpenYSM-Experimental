@@ -369,7 +369,10 @@ public class AnimationRouletteScreen extends Screen {
         renderRadialBackground(guiGraphics.pose(), i, i2);
         renderRadialButtons(guiGraphics);
         renderPageInfo(guiGraphics);
-        for (Renderable renderable : this.renderables) {
+        for (var child : this.children()) {
+            if (!(child instanceof Renderable renderable)) {
+                continue;
+            }
             if (!(renderable instanceof ISpecialWidget)) {
                 renderable.render(guiGraphics, i, i2, f);
             }
@@ -382,7 +385,10 @@ public class AnimationRouletteScreen extends Screen {
         }
         guiGraphics.pose().pushPose();
         guiGraphics.pose().translate(0.0f, -this.configScrollOffset, 0.0f);
-        for (Renderable renderable2 : this.renderables) {
+        for (var child : this.children()) {
+            if (!(child instanceof Renderable renderable2)) {
+                continue;
+            }
             if (renderable2 instanceof ISpecialWidget) {
                 renderable2.render(guiGraphics, i, i3, f);
             }
@@ -454,7 +460,7 @@ public class AnimationRouletteScreen extends Screen {
 
     public boolean mouseClicked(double d, double d2, int i) {
         if (-1 < this.hoveredIndex && this.hoveredIndex < this.currentProperties.size()) {
-            getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
             String str = this.currentProperties.getKeyAt(this.hoveredIndex);
             if (RETURN_KEY.equals(str)) {
                 navigateBack();
@@ -464,7 +470,7 @@ public class AnimationRouletteScreen extends Screen {
                 playAnimation(str);
             }
         } else if (-1 < this.hoveredConfigIndex && this.hoveredConfigIndex < this.currentProperties.size()) {
-            getMinecraft().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
             String str2 = this.currentProperties.getValueAt(this.hoveredConfigIndex);
             if (str2.startsWith(SUBMENU_PREFIX)) {
                 String strSubstring = str2.substring(SUBMENU_PREFIX.length());
@@ -491,7 +497,7 @@ public class AnimationRouletteScreen extends Screen {
     }
 
     public boolean keyPressed(int i, int i2, int i3) {
-        if (AnimationRouletteKey.KEY_ROULETTE.matches(i, i2) && AnimationRouletteKey.KEY_ROULETTE.getKeyModifier().isActive(null)) {
+        if (AnimationRouletteKey.KEY_ROULETTE.matches(i, i2)) {
             onClose();
             return true;
         }
@@ -506,7 +512,7 @@ public class AnimationRouletteScreen extends Screen {
     }
 
     private void playAnimation(String str) {
-        LocalPlayer localPlayer = getMinecraft().player;
+        LocalPlayer localPlayer = this.minecraft.player;
         if (NetworkHandler.isClientConnected()) {
             Pair<String, Integer> pairPeekLast = navigationStack.peekLast();
             String str2 = StringPool.EMPTY;
@@ -520,19 +526,19 @@ public class AnimationRouletteScreen extends Screen {
                 NetworkHandler.CHANNEL.sendToServer(new C2SPlayAnimationPacket(this.hoveredIndex, str2, entity.getId()));
             }
         } else if (localPlayer != null) {
-            localPlayer.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                 cap.requestModelSwitch(str);
             });
         }
         if (localPlayer != null && GeneralConfig.PRINT_ANIMATION_ROULETTE_MSG.get().booleanValue()) {
             localPlayer.sendSystemMessage(Component.translatable("message.yes_steve_model.model.animation_roulette.play", str));
         }
-        getMinecraft().setScreen(null);
+        this.minecraft.setScreen(null);
     }
 
     private void navigateToSubmenu(String str) {
         if (navigationStack.size() > 5) {
-            LocalPlayer localPlayer = getMinecraft().player;
+            LocalPlayer localPlayer = this.minecraft.player;
             if (localPlayer != null) {
                 localPlayer.sendSystemMessage(Component.translatable("gui.yes_steve_model.roulette.too_long"));
                 return;
@@ -542,17 +548,17 @@ public class AnimationRouletteScreen extends Screen {
         String strSubstring = str.substring(SUBMENU_PREFIX.length());
         if (this.textProperties.get(strSubstring) != null) {
             navigationStack.addLast(MutablePair.of(strSubstring, 0));
-            getMinecraft().setScreen(new AnimationRouletteScreen(this.renderGroups, this.textProperties, this.renderContext, this.animatableModel));
+            this.minecraft.setScreen(new AnimationRouletteScreen(this.renderGroups, this.textProperties, this.renderContext, this.animatableModel));
         }
     }
 
     private void navigateBack() {
         if (navigationStack.size() > 1) {
             navigationStack.removeLast();
-            getMinecraft().setScreen(new AnimationRouletteScreen(this.renderGroups, this.textProperties, this.renderContext, this.animatableModel));
+            this.minecraft.setScreen(new AnimationRouletteScreen(this.renderGroups, this.textProperties, this.renderContext, this.animatableModel));
             return;
         }
-        getMinecraft().setScreen(null);
+        this.minecraft.setScreen(null);
     }
 
     public static void setInitialSubmenu(String str) {
@@ -601,7 +607,7 @@ public class AnimationRouletteScreen extends Screen {
     private void renderKeyBindings(GuiGraphics guiGraphics, int i, int i2, int i3) {
         MutableComponent mutableComponentWithStyle = Component.literal("[ ").withStyle(ChatFormatting.YELLOW);
         KeyMapping keyMapping = ExtraAnimationKey.KEY_MAPPINGS.get(i);
-        if (keyMapping.getKey() == InputConstants.UNKNOWN) {
+        if (keyMapping.isUnbound()) {
             mutableComponentWithStyle.append(Component.translatable("key.yes_steve_model.extra_animation.none"));
         } else {
             mutableComponentWithStyle.append(keyMapping.getTranslatedKeyMessage());

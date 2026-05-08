@@ -13,7 +13,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 @OnlyIn(Dist.CLIENT)
 public final class MaidCapabilityEvent {
 
-    private static final ResourceLocation CAPABILITY_KEY = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "ysm_maid");
+    private static final ResourceLocation CAPABILITY_KEY = new ResourceLocation(YesSteveModel.MOD_ID, "ysm_maid");
 
     @SubscribeEvent
     public void onAttachCapabilities(AttachCapabilitiesEvent<Entity> event) {

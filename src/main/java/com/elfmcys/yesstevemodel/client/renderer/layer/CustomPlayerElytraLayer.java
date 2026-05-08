@@ -21,7 +21,7 @@ import net.minecraft.world.item.ItemStack;
 
 public class CustomPlayerElytraLayer extends GeoLayerRenderer<CustomPlayerEntity> {
 
-    private static final ResourceLocation WINGS_LOCATION = ResourceLocation.parse("textures/entity/elytra.png");
+    private static final ResourceLocation WINGS_LOCATION = new ResourceLocation("textures/entity/elytra.png");
 
     private final ElytraModel<LivingEntity> elytraModel;
 

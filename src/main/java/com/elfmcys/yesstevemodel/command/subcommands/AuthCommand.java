@@ -57,7 +57,7 @@ public class AuthCommand {
             return Command.SINGLE_SUCCESS;
         }
         targets.forEach(player -> {
-            player.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(ownModelCap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(ownModelCap -> {
                 ownModelCap.addModel(string);
                 NetworkHandler.sendToClientPlayer(new S2CSyncAuthModelsPacket(ownModelCap.getAuthModels()), player);
                 context.getSource().sendSuccess(() -> Component.translatable("commands.yes_steve_model.auth_model.add.info", string, player.getScoreboardName()), true);
@@ -67,7 +67,7 @@ public class AuthCommand {
     }
 
     private static int addAllAuthModel(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        EntityArgument.getPlayers(context, TARGETS_NAME).forEach(player -> player.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(ownModelCap -> {
+        EntityArgument.getPlayers(context, TARGETS_NAME).forEach(player -> com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(ownModelCap -> {
             Set<String> setKeySet = ServerModelManager.getServerModelInfo().keySet();
             Objects.requireNonNull(ownModelCap);
             setKeySet.forEach(ownModelCap::addModel);
@@ -80,9 +80,9 @@ public class AuthCommand {
     private static int removeAuthModel(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         Collection<ServerPlayer> targets = EntityArgument.getPlayers(context, TARGETS_NAME);
         String modelName = StringArgumentType.getString(context, MODEL_ID_NAME);
-        targets.forEach(player -> player.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(ownModelsCap -> {
+        targets.forEach(player -> com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(ownModelsCap -> {
             ownModelsCap.removeModel(modelName);
-            player.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelIdCap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelIdCap -> {
                 if (ServerModelManager.getAuthModels().contains(modelIdCap.getModelId()) && !ownModelsCap.containsModel(modelIdCap.getModelId())) {
                     modelIdCap.resetToDefault();
                 }
@@ -94,9 +94,9 @@ public class AuthCommand {
     }
 
     private static int executeClear(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        EntityArgument.getPlayers(context, TARGETS_NAME).forEach(player -> player.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(ownModelCap -> {
+        EntityArgument.getPlayers(context, TARGETS_NAME).forEach(player -> com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(ownModelCap -> {
             ownModelCap.clear();
-            player.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelIdCap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelIdCap -> {
                 if (ServerModelManager.getAuthModels().contains(modelIdCap.getModelId())) {
                     modelIdCap.resetToDefault();
                 }

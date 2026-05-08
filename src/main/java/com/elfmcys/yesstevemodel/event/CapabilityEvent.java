@@ -30,23 +30,23 @@ import java.util.function.Consumer;
 @Mod.EventBusSubscriber
 public final class CapabilityEvent {
 
-    private static final ResourceLocation MODEL_INFO_CAP = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "model_id");
+    private static final ResourceLocation MODEL_INFO_CAP = new ResourceLocation(YesSteveModel.MOD_ID, "model_id");
 
-    private static final ResourceLocation PROJECTILE_MODEL_CAP = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "projectile_model_id");
+    private static final ResourceLocation PROJECTILE_MODEL_CAP = new ResourceLocation(YesSteveModel.MOD_ID, "projectile_model_id");
 
-    private static final ResourceLocation VEHICLE_MODEL_CAP = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "vehicle_model_id");
+    private static final ResourceLocation VEHICLE_MODEL_CAP = new ResourceLocation(YesSteveModel.MOD_ID, "vehicle_model_id");
 
-    private static final ResourceLocation AUTH_MODELS_CAP = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "own_models");
+    private static final ResourceLocation AUTH_MODELS_CAP = new ResourceLocation(YesSteveModel.MOD_ID, "own_models");
 
-    private static final ResourceLocation STAR_MODELS_CAP = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "star_models");
+    private static final ResourceLocation STAR_MODELS_CAP = new ResourceLocation(YesSteveModel.MOD_ID, "star_models");
 
-    private static final ResourceLocation PLAYER_CAP = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "animatable");
+    private static final ResourceLocation PLAYER_CAP = new ResourceLocation(YesSteveModel.MOD_ID, "animatable");
 
-    private static final ResourceLocation PROJECTILE_CAP = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "projectile_animatable");
+    private static final ResourceLocation PROJECTILE_CAP = new ResourceLocation(YesSteveModel.MOD_ID, "projectile_animatable");
 
-    private static final ResourceLocation VEHICLE_CAP = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "vehicle_animatable");
+    private static final ResourceLocation VEHICLE_CAP = new ResourceLocation(YesSteveModel.MOD_ID, "vehicle_animatable");
 
-    private static final ResourceLocation CLIENT_LAZY_CAP = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "client_lazy");
+    private static final ResourceLocation CLIENT_LAZY_CAP = new ResourceLocation(YesSteveModel.MOD_ID, "client_lazy");
 
     @SubscribeEvent
     public static void onAttachCapabilities(AttachCapabilitiesEvent<Entity> event) {
@@ -55,30 +55,30 @@ public final class CapabilityEvent {
         }
         Entity entity = event.getObject();
         if (entity instanceof Player player) {
-            if (!entity.level().isClientSide() && !player.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).isPresent() && !event.getCapabilities().containsKey(MODEL_INFO_CAP)) {
+            if (!entity.level().isClientSide() && !com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, ModelInfoCapabilityProvider.MODEL_INFO_CAP).isPresent() && !event.getCapabilities().containsKey(MODEL_INFO_CAP)) {
                 event.addCapability(MODEL_INFO_CAP, new ModelInfoCapabilityProvider());
             }
-            if (!player.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP).isPresent() && !event.getCapabilities().containsKey(AUTH_MODELS_CAP)) {
+            if (!com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, AuthModelsCapabilityProvider.AUTH_MODELS_CAP).isPresent() && !event.getCapabilities().containsKey(AUTH_MODELS_CAP)) {
                 event.addCapability(AUTH_MODELS_CAP, new AuthModelsCapabilityProvider());
             }
-            if (!player.getCapability(StarModelsCapabilityProvider.STAR_MODELS_CAP).isPresent() && !event.getCapabilities().containsKey(STAR_MODELS_CAP)) {
+            if (!com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, StarModelsCapabilityProvider.STAR_MODELS_CAP).isPresent() && !event.getCapabilities().containsKey(STAR_MODELS_CAP)) {
                 event.addCapability(STAR_MODELS_CAP, new StarModelsCapabilityProvider());
             }
         } else if (entity instanceof Projectile) {
-            if (!entity.level().isClientSide() && !entity.getCapability(ProjectileModelCapabilityProvider.PROJECTILE_MODEL).isPresent() && !event.getCapabilities().containsKey(PROJECTILE_MODEL_CAP)) {
+            if (!entity.level().isClientSide() && !com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, ProjectileModelCapabilityProvider.PROJECTILE_MODEL).isPresent() && !event.getCapabilities().containsKey(PROJECTILE_MODEL_CAP)) {
                 event.addCapability(PROJECTILE_MODEL_CAP, new ProjectileModelCapabilityProvider());
             }
-        } else if (!entity.level().isClientSide() && !entity.getCapability(VehicleModelCapabilityProvider.VEHICLE_MODEL_CAP).isPresent() && !event.getCapabilities().containsKey(VEHICLE_MODEL_CAP)) {
+        } else if (!entity.level().isClientSide() && !com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, VehicleModelCapabilityProvider.VEHICLE_MODEL_CAP).isPresent() && !event.getCapabilities().containsKey(VEHICLE_MODEL_CAP)) {
             event.addCapability(VEHICLE_MODEL_CAP, new VehicleModelCapabilityProvider());
         }
         if (FMLEnvironment.dist == Dist.CLIENT && entity.level().isClientSide()) {
             if (entity instanceof AbstractClientPlayer abstractClientPlayer) {
-                if (!abstractClientPlayer.getCapability(PlayerCapabilityProvider.PLAYER_CAP).isPresent() && !event.getCapabilities().containsKey(PLAYER_CAP)) {
+                if (!com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(abstractClientPlayer, PlayerCapabilityProvider.PLAYER_CAP).isPresent() && !event.getCapabilities().containsKey(PLAYER_CAP)) {
                     event.addCapability(PLAYER_CAP, new PlayerCapabilityProvider(abstractClientPlayer));
                     return;
                 }
             }
-            if (!entity.getCapability(ClientLazyCapabilityProvider.CLIENT_LAZY_CAP).isPresent() && !event.getCapabilities().containsKey(CLIENT_LAZY_CAP)) {
+            if (!com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, ClientLazyCapabilityProvider.CLIENT_LAZY_CAP).isPresent() && !event.getCapabilities().containsKey(CLIENT_LAZY_CAP)) {
                 VehicleCapabilityProvider vehicleCapabilityProvider = new VehicleCapabilityProvider(entity);
                 event.addCapability(VEHICLE_CAP, vehicleCapabilityProvider);
                 ProjectileCapabilityProvider projectileCapabilityProvider = null;
@@ -96,11 +96,9 @@ public final class CapabilityEvent {
         if (!YesSteveModel.isAvailable()) {
             return;
         }
-        event.getOriginal().reviveCaps();
         LazyOptional<ModelInfoCapability> oldModelInfoCap = getModelInfoCap(event.getOriginal());
         LazyOptional<AuthModelsCapability> oldAuthModelsCap = getAuthModelsCap(event.getOriginal());
         LazyOptional<StarModelsCapability> oldStarModelsCap = getStarModelsCap(event.getOriginal());
-        event.getOriginal().invalidateCaps();
         LazyOptional<ModelInfoCapability> modelInfoCap = getModelInfoCap(event.getEntity());
         LazyOptional<AuthModelsCapability> authModelsCap = getAuthModelsCap(event.getEntity());
         LazyOptional<StarModelsCapability> starModelsCap = getStarModelsCap(event.getEntity());
@@ -141,13 +139,13 @@ public final class CapabilityEvent {
         }
         target = startTracking.getTarget();
         if (target instanceof Projectile projectile) {
-            projectile.getCapability(ProjectileModelCapabilityProvider.PROJECTILE_MODEL).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(projectile, ProjectileModelCapabilityProvider.PROJECTILE_MODEL).ifPresent(cap -> {
                 if (cap.isInitialized()) {
                     NetworkHandler.sendToClientPlayer(new S2CSyncProjectileModelPacket(projectile.getId(), cap), startTracking.getEntity());
                 }
             });
         } else if (startTracking.getTarget() != null) {
-            startTracking.getTarget().getCapability(VehicleModelCapabilityProvider.VEHICLE_MODEL_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(startTracking.getTarget(), VehicleModelCapabilityProvider.VEHICLE_MODEL_CAP).ifPresent(cap -> {
                 if (cap.isInitialized()) {
                     NetworkHandler.sendToClientPlayer(new S2CSyncVehicleModelPacket(startTracking.getTarget().getId(), cap), startTracking.getEntity());
                 }
@@ -219,11 +217,11 @@ public final class CapabilityEvent {
     }
 
     public static void syncProjectileModel(Projectile projectile, ServerPlayer serverPlayer) {
-        serverPlayer.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelInfoCap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(serverPlayer, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelInfoCap -> {
             if (!NetworkHandler.isPlayerConnected(serverPlayer) && !modelInfoCap.isMandatory()) {
                 return;
             }
-            projectile.getCapability(ProjectileModelCapabilityProvider.PROJECTILE_MODEL).ifPresent(projectileModelCap -> modelInfoCap.withMolangVars(object2FloatOpenHashMap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(projectile, ProjectileModelCapabilityProvider.PROJECTILE_MODEL).ifPresent(projectileModelCap -> modelInfoCap.withMolangVars(object2FloatOpenHashMap -> {
                 projectileModelCap.setModel(modelInfoCap.getModelId(), object2FloatOpenHashMap);
                 NetworkHandler.sendToTrackingEntity(new S2CSyncProjectileModelPacket(projectile.getId(), projectileModelCap), projectile);
             }));
@@ -231,11 +229,11 @@ public final class CapabilityEvent {
     }
 
     public static void syncVehicleModel(Entity entity, ServerPlayer serverPlayer) {
-        serverPlayer.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelInfoCap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(serverPlayer, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelInfoCap -> {
             if (!NetworkHandler.isPlayerConnected(serverPlayer) && !modelInfoCap.isMandatory()) {
                 return;
             }
-            entity.getCapability(VehicleModelCapabilityProvider.VEHICLE_MODEL_CAP).ifPresent(vehicleModelCap -> modelInfoCap.getMolangVars().ifPresent(object2FloatOpenHashMap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, VehicleModelCapabilityProvider.VEHICLE_MODEL_CAP).ifPresent(vehicleModelCap -> modelInfoCap.getMolangVars().ifPresent(object2FloatOpenHashMap -> {
                 vehicleModelCap.setModel(modelInfoCap.getModelId(), object2FloatOpenHashMap);
                 NetworkHandler.sendToTrackingEntity(new S2CSyncVehicleModelPacket(entity.getId(), vehicleModelCap), entity);
             }));
@@ -243,14 +241,14 @@ public final class CapabilityEvent {
     }
 
     private static LazyOptional<ModelInfoCapability> getModelInfoCap(Player player) {
-        return player.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP);
+        return com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, ModelInfoCapabilityProvider.MODEL_INFO_CAP);
     }
 
     private static LazyOptional<AuthModelsCapability> getAuthModelsCap(Player player) {
-        return player.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP);
+        return com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, AuthModelsCapabilityProvider.AUTH_MODELS_CAP);
     }
 
     private static LazyOptional<StarModelsCapability> getStarModelsCap(Player player) {
-        return player.getCapability(StarModelsCapabilityProvider.STAR_MODELS_CAP);
+        return com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, StarModelsCapabilityProvider.STAR_MODELS_CAP);
     }
 }

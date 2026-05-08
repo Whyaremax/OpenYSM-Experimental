@@ -1,8 +1,8 @@
 package com.elfmcys.yesstevemodel.network;
 
 import com.elfmcys.yesstevemodel.YesSteveModel;
+import com.elfmcys.yesstevemodel.mixin.ServerGamePacketListenerImplAccessor;
 import com.elfmcys.yesstevemodel.network.message.*;
-import io.netty.util.AttributeKey;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.Connection;
@@ -16,24 +16,31 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
+import java.util.WeakHashMap;
 
 public final class NetworkHandler {
 
     public static final String VERSION = "2.6.0";
 
-    public static final ResourceLocation CHANNEL_ID = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, VERSION.replace('.', '_'));
+    public static final ResourceLocation CHANNEL_ID = new ResourceLocation(YesSteveModel.MOD_ID, VERSION.replace('.', '_'));
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(CHANNEL_ID, () -> VERSION, str -> true, str2 -> true);
 
-    private static final AttributeKey<String> CHANNEL_VERSION_KEY = AttributeKey.valueOf("yes_steve_model_channel_version");
+    private static final Map<Connection, String> CHANNEL_VERSIONS = Collections.synchronizedMap(new WeakHashMap<>());
 
     public static boolean setChannelVersion(Connection connection, String str) {
-        return connection.channel().attr(CHANNEL_VERSION_KEY).compareAndSet(null, str);
+        if (connection == null || CHANNEL_VERSIONS.containsKey(connection)) {
+            return false;
+        }
+        CHANNEL_VERSIONS.put(connection, str);
+        return true;
     }
 
     public static boolean isPlayerConnected(ServerPlayer serverPlayer) {
-        return serverPlayer.connection != null && isConnectionValid(serverPlayer.connection.connection);
+        return serverPlayer.connection != null && isConnectionValid(getConnection(serverPlayer));
     }
 
     public static boolean isClientConnected() {
@@ -45,7 +52,15 @@ public final class NetworkHandler {
     }
 
     public static boolean isConnectionValid(@Nullable Connection connection) {
-        return connection != null && connection.channel() != null && VERSION.equals(connection.channel().attr(CHANNEL_VERSION_KEY).get());
+        return connection != null && VERSION.equals(CHANNEL_VERSIONS.get(connection));
+    }
+
+    @Nullable
+    public static Connection getConnection(ServerPlayer player) {
+        if (player == null || player.connection == null) {
+            return null;
+        }
+        return ((ServerGamePacketListenerImplAccessor) player.connection).ysm$getConnection();
     }
 
     public static void init() {
@@ -68,6 +83,7 @@ public final class NetworkHandler {
         CHANNEL.registerMessage(23, C2SSwingArmPacket.class, C2SSwingArmPacket::encode, C2SSwingArmPacket::decode, C2SSwingArmPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(51, S2CVersionCheckPacket.class, S2CVersionCheckPacket::encode, S2CVersionCheckPacket::decode, S2CVersionCheckPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(52, C2SVersionCheckPacket.class, C2SVersionCheckPacket::encode, C2SVersionCheckPacket::decode, C2SVersionCheckPacket::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.ensureRegistered();
     }
 
     public static void sendToServer(Object obj) {

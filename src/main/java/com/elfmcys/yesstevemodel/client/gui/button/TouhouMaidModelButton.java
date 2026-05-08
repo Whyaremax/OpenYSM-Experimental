@@ -24,7 +24,7 @@ public class TouhouMaidModelButton extends ModelButton {
             return;
         }
         Component component = ComponentUtil.getDisplayName(this.renderContext, this.modelIdHolder.getModelId());
-        this.maid.getCapability(MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(this.maid, MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
             cap.setYsmModel(this.modelIdHolder.getModelId(), this.modelIdHolder.getCurrentTextureName());
             NetworkHandler.CHANNEL.sendToServer(new YsmMaidModelMessage(this.maid.getId(), this.modelIdHolder.getModelId(), this.modelIdHolder.getCurrentTextureName(), component));
         });

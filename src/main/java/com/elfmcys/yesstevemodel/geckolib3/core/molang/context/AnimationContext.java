@@ -69,11 +69,11 @@ public class AnimationContext<TEntity> implements IContext<TEntity> {
         this.storage = context.storage;
         this.audioPlayerManager = context.audioPlayerManager;
         if (entity instanceof Player) {
-            ((Player) entity).getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> this.foreignStorage = cap.getPropertyGetter());
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(((Player) entity), PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> this.foreignStorage = cap.getPropertyGetter());
         } else if (entity instanceof Projectile) {
-            ((Projectile) entity).getCapability(ProjectileCapabilityProvider.PROJECTILE_CAP).ifPresent(cap -> this.foreignStorage = cap.getPropertyGetter());
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(((Projectile) entity), ProjectileCapabilityProvider.PROJECTILE_CAP).ifPresent(cap -> this.foreignStorage = cap.getPropertyGetter());
         } else if (entity instanceof Entity) {
-            ((Entity) entity).getCapability(VehicleCapabilityProvider.VEHICLE_CAP).ifPresent(cap -> this.foreignStorage = cap.getPropertyGetter());
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(((Entity) entity), VehicleCapabilityProvider.VEHICLE_CAP).ifPresent(cap -> this.foreignStorage = cap.getPropertyGetter());
         }
     }
 

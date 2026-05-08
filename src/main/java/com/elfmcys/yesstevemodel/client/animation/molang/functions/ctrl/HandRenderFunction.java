@@ -84,7 +84,7 @@ public class HandRenderFunction extends LivingEntityFunction {
             if (iTagManagerTags == null) {
                 return 0;
             }
-            return itemBySlot.is(iTagManagerTags.createTagKey(ResourceLocation.parse(strSubstring))) ? 1 : 0;
+            return itemBySlot.is(iTagManagerTags.createTagKey(new ResourceLocation(strSubstring))) ? 1 : 0;
         }
         if (id.startsWith(TYPE_PREFIX)) {
             String itemType = InnerClassify.getItemType(itemBySlot);

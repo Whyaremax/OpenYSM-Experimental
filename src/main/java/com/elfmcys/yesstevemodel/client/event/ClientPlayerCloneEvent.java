@@ -15,8 +15,6 @@ public class ClientPlayerCloneEvent {
         if (!YesSteveModel.isAvailable() || !NetworkHandler.isClientConnected()) {
             return;
         }
-        event.getOldPlayer().reviveCaps();
-        event.getOldPlayer().getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> event.getNewPlayer().getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap2 -> cap2.copyFrom(cap)));
-        event.getOldPlayer().invalidateCaps();
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(event.getOldPlayer(), PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(event.getNewPlayer(), PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap2 -> cap2.copyFrom(cap)));
     }
 }

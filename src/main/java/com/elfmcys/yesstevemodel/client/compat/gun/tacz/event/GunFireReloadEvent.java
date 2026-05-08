@@ -16,7 +16,7 @@ public class GunFireReloadEvent {
             return;
         }
         LivingEntity shooter = event.getShooter();
-        shooter.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(shooter, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
             cap.setExtraRenderFlag(true);
         });
         TouhouLittleMaidCompat.syncMaidState(shooter);
@@ -28,7 +28,7 @@ public class GunFireReloadEvent {
             return;
         }
         LivingEntity shooter = event.getShooter();
-        shooter.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(shooter, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
             cap.setExtraRenderFlag(true);
         });
         TouhouLittleMaidCompat.syncMaidState(shooter);
@@ -40,7 +40,7 @@ public class GunFireReloadEvent {
             return;
         }
         LivingEntity entity = event.getEntity();
-        entity.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
             cap.setExtraRenderFlag(true);
         });
         TouhouLittleMaidCompat.syncMaidState(entity);

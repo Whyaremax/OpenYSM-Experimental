@@ -62,7 +62,7 @@ public class S2CSyncProjectileModelPacket {
 
     @OnlyIn(Dist.CLIENT)
     public static void handleCapability(Entity entity, ProjectileModelCapability capability, Int2FloatOpenHashMap floatMap) {
-        entity.getCapability(ClientLazyCapabilityProvider.CLIENT_LAZY_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, ClientLazyCapabilityProvider.CLIENT_LAZY_CAP).ifPresent(cap -> {
             ProjectileCapability projectileCapability = cap.getProjectileAnimProvider().getOrCreateCapability();
             projectileCapability.updateModelId(capability.getOwnerModelId());
             projectileCapability.setFloatProperties(floatMap);

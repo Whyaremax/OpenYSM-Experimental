@@ -74,7 +74,7 @@ public final class ModelPreviewRenderer {
     public static void renderVehicleModel(Entity entity, PoseStack poseStack, float partialTick) {
         Entity vehicle = entity.getVehicle();
         if (vehicle != null) {
-            vehicle.getCapability(VehicleCapabilityProvider.VEHICLE_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(vehicle, VehicleCapabilityProvider.VEHICLE_CAP).ifPresent(cap -> {
                 int index;
                 AnimatedGeoModel model;
                 List<IBone> list;
@@ -86,7 +86,7 @@ public final class ModelPreviewRenderer {
                 RenderUtils.prepMatrixForLocator(poseStack, list);
                 poseStack.mulPose(com.mojang.math.Axis.YN.rotationDegrees(180.0f - bodyRotation));
                 double myRidingOffset = (-vehicle.getPassengersRidingOffset()) - entity.getMyRidingOffset();
-                if (((entity instanceof Player) && entity.getCapability(PlayerCapabilityProvider.PLAYER_CAP).isPresent()) || TouhouLittleMaidCompat.isMaidRideable(entity)) {
+                if (((entity instanceof Player) && com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, PlayerCapabilityProvider.PLAYER_CAP).isPresent()) || TouhouLittleMaidCompat.isMaidRideable(entity)) {
                     myRidingOffset -= 0.5d;
                 }
                 poseStack.translate(0.0d, myRidingOffset, 0.0d);

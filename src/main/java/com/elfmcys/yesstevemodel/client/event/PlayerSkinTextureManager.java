@@ -16,9 +16,9 @@ import java.util.Map;
 @Mod.EventBusSubscriber({Dist.CLIENT})
 public class PlayerSkinTextureManager {
 
-    private static final ResourceLocation STEVE_SKIN = ResourceLocation.parse("textures/entity/player/wide/steve.png");
+    private static final ResourceLocation STEVE_SKIN = new ResourceLocation("textures/entity/player/wide/steve.png");
 
-    private static final ResourceLocation ALEX_SKIN = ResourceLocation.parse("textures/entity/player/slim/alex.png");
+    private static final ResourceLocation ALEX_SKIN = new ResourceLocation("textures/entity/player/slim/alex.png");
 
     private static final String STEVE_TEXTURE_ID = "misc/2_steve";
 

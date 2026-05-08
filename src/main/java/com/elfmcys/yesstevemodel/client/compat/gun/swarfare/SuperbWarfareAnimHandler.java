@@ -35,9 +35,9 @@ import java.util.Objects;
 
 public class SuperbWarfareAnimHandler {
 
-    private static final TagKey<Item> PISTOL_TAG = TagKey.create(Registries.ITEM, ResourceLocation.parse("superbwarfare:animated/pistol"));
+    private static final TagKey<Item> PISTOL_TAG = TagKey.create(Registries.ITEM, new ResourceLocation("superbwarfare:animated/pistol"));
 
-    private static final TagKey<Item> RPG_TAG = TagKey.create(Registries.ITEM, ResourceLocation.parse("superbwarfare:animated/rpg"));
+    private static final TagKey<Item> RPG_TAG = TagKey.create(Registries.ITEM, new ResourceLocation("superbwarfare:animated/rpg"));
 
     public static boolean isGunItem(ItemStack stack) {
         return stack.getItem() instanceof GunItem;

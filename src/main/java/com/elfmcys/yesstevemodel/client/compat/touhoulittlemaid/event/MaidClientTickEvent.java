@@ -24,7 +24,7 @@ public class MaidClientTickEvent {
     }
 
     private void tickMaidModel(EntityMaid entityMaid) {
-        entityMaid.getCapability(MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entityMaid, MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
         });
     }
 }

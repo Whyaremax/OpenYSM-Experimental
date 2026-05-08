@@ -49,7 +49,7 @@ public class Armor extends LivingEntityFunction {
             return strSubstring.equals(key.toString()) ? 1 : 0;
         }
         if (id.startsWith(PREFIX_ITEM_TAG) && (iTagManagerTags = ForgeRegistries.ITEMS.tags()) != null) {
-            return itemBySlot.is(iTagManagerTags.createTagKey(ResourceLocation.parse(strSubstring))) ? 1 : 0;
+            return itemBySlot.is(iTagManagerTags.createTagKey(new ResourceLocation(strSubstring))) ? 1 : 0;
         }
         return 0;
     }

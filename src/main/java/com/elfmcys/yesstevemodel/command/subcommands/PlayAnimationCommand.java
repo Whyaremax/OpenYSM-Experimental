@@ -34,7 +34,7 @@ public class PlayAnimationCommand {
     private static int playAnimation(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         Collection<ServerPlayer> players = EntityArgument.getPlayers(context, TARGETS_NAME);
         String animation = StringArgumentType.getString(context, ANIMATION_NAME);
-        players.forEach(player -> player.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
+        players.forEach(player -> com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
             if (STOP.equals(animation)) {
                 cap.stopAnimation(player);
             } else {

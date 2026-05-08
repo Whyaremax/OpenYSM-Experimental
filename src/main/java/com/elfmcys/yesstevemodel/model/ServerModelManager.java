@@ -48,6 +48,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -441,39 +442,55 @@ public final class ServerModelManager {
 
     private static void scanDirectoryModels(Path baseDir, Path cacheDir, Map<String, ServerModelData> loaded, Set<String> authIds, Set<String> validCaches, boolean isAuth) {
         if (baseDir == null || !Files.isDirectory(baseDir)) return;
-        try (Stream<Path> stream = Files.walk(baseDir)) {
-            stream.forEach(path -> {
-                String fileName = path.getFileName().toString();
-                try {
-                    if (fileName.equals("ysm.json") || (fileName.equals("info.json") && !Files.exists(path.getParent().resolve("ysm.json")))) {
-                        Path modelDir = path.getParent();
-                        // 提取相對路徑作為ID
-                        String modelId = baseDir.relativize(modelDir).toString().replace('\\', '/');
+        try {
+            Files.walkFileTree(baseDir, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    if (dir.equals(baseDir) && !YSMFolderDeserializer.isModelFolder(dir)) {
+                        return FileVisitResult.CONTINUE;
+                    }
 
-                        try (YSMFolderDeserializer deserializer = new YSMFolderDeserializer(modelDir)) {
-                            RawYsmModel rawModel = deserializer.deserialize();
-                            ServerModelData data = processAndCacheModel(modelId, rawModel, cacheDir, isAuth, validCaches);
-                            if (data != null) {
-                                loaded.put(modelId, data);
-                                if (isAuth) authIds.add(modelId);
+                    try {
+                        if (YSMFolderDeserializer.isModelFolder(dir)) {
+                            String modelId = baseDir.relativize(dir).toString().replace('\\', '/');
+                            try (YSMFolderDeserializer deserializer = new YSMFolderDeserializer(dir)) {
+                                RawYsmModel rawModel = deserializer.deserialize();
+                                ServerModelData data = processAndCacheModel(modelId, rawModel, cacheDir, isAuth, validCaches);
+                                if (data != null) {
+                                    loaded.put(modelId, data);
+                                    if (isAuth) authIds.add(modelId);
+                                }
+                            } catch (Exception e) {
+                                YesSteveModel.LOGGER.error("Failed to load model at: " + dir, e);
                             }
+                            return FileVisitResult.SKIP_SUBTREE;
+                        }
+                    } catch (Exception e) {
+                        YesSteveModel.LOGGER.error("Error checking model directory: " + dir, e);
+                    }
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (file.getFileName().toString().endsWith(".ysm")) {
+                        try {
+                            String relativePath = baseDir.relativize(file).toString().replace('\\', '/');
+                            byte[] raw = Files.readAllBytes(file);
+                            RawYsmModel rawModel = deserializeYsmFile(raw);
+                            if (rawModel != null) {
+                                ServerModelData data = processAndCacheModel(relativePath, rawModel, cacheDir, isAuth, validCaches);
+                                if (data != null) {
+                                    loaded.put(relativePath, data);
+                                    if (isAuth) authIds.add(relativePath);
+                                }
+                            }
+                        } catch (Exception e) {
+                            YesSteveModel.LOGGER.error("Failed to load binary model at: " + file, e);
                         }
                     }
-                    else if (fileName.endsWith(".ysm")) {
-                        String relativePath = baseDir.relativize(path).toString().replace('\\', '/');
-                        String modelId = /*relativePath.substring(0, relativePath.length() - 4)*/relativePath;
-                        byte[] raw = Files.readAllBytes(path);
-                        RawYsmModel rawModel = deserializeYsmFile(raw);
-                        if (rawModel != null) {
-                            ServerModelData data = processAndCacheModel(modelId, rawModel, cacheDir, isAuth, validCaches);
-                            if (data != null) {
-                                loaded.put(modelId, data);
-                                if (isAuth) authIds.add(modelId);
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    YesSteveModel.LOGGER.error("Failed to load model at: " + path, e);
+                    return FileVisitResult.CONTINUE;
                 }
             });
         } catch (Exception e) {
@@ -898,7 +915,7 @@ public final class ServerModelManager {
     }
 
     private static String[] collectPlayerModelIds(Collection<ServerPlayer> collection) {
-        return collection.stream().filter(NetworkHandler::isPlayerConnected).map(serverPlayer -> serverPlayer.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).map(ModelInfoCapability::getModelId)).filter(Optional::isPresent).map(Optional::get).distinct().toArray(String[]::new);
+        return collection.stream().filter(NetworkHandler::isPlayerConnected).map(serverPlayer -> com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(serverPlayer, ModelInfoCapabilityProvider.MODEL_INFO_CAP).map(ModelInfoCapability::getModelId)).filter(Optional::isPresent).map(Optional::get).distinct().toArray(String[]::new);
     }
 
     private static void onModelLoadComplete(ModelLoadResult modelLoadResult, @Nullable Object obj) {
@@ -945,7 +962,7 @@ public final class ServerModelManager {
         if (!serverGamePacketListenerImpl.isAcceptingMessages() || !serverGamePacketListenerImpl.getClass().equals(ServerGamePacketListenerImpl.class)) {
             return null;
         }
-        return serverGamePacketListenerImpl.connection;
+        return NetworkHandler.getConnection(player);
     }
 
     private static boolean sendModelData(UUID uuid, ByteBuffer byteBuffer, PendingTransfer pendingTransfer) {
@@ -971,45 +988,39 @@ public final class ServerModelManager {
     private static boolean sendPacketReliably(Connection connection, Object obj, PendingTransfer pendingTransfer) {
         if (!pendingTransfer.hasStarted) {
             pendingTransfer.hasStarted = true;
-            pendingTransfer.pendingBytes = connection.channel().unsafe().outboundBuffer().totalPendingWriteBytes() + 65536;
+            pendingTransfer.pendingBytes = 0;
         }
 
         final AtomicInteger atomicInteger = new AtomicInteger(0);
         while (connection.isConnected()) {
-            if (connection.channel().unsafe().outboundBuffer().size() > pendingTransfer.pendingBytes) {
-                if (!YSMThreadPool.awaitTermination(10)) {
-                    return false;
-                }
-            } else {
-                try {
-                    connection.send((Packet<?>) obj, new PacketSendListener() {
-                        public void onSuccess() {
-                            atomicInteger.set(1);
-                            PacketSendListener.super.onSuccess();
-                        }
+            try {
+                connection.send((Packet<?>) obj, new PacketSendListener() {
+                    public void onSuccess() {
+                        atomicInteger.set(1);
+                        PacketSendListener.super.onSuccess();
+                    }
 
-                        @Nullable
-                        public Packet<?> onFailure() {
-                            atomicInteger.set(-1);
-                            return null;
-                        }
-                    });
-                    while (atomicInteger.get() == 0) {
-                        if (!YSMThreadPool.awaitTermination(5)) {
-                            return false;
-                        }
+                    @Nullable
+                    public Packet<?> onFailure() {
+                        atomicInteger.set(-1);
+                        return null;
                     }
-                    if (atomicInteger.get() == 1) {
-                        return true;
-                    }
-                    if (!YSMThreadPool.awaitTermination(100)) {
+                });
+                while (atomicInteger.get() == 0) {
+                    if (!YSMThreadPool.awaitTermination(5)) {
                         return false;
                     }
-                    atomicInteger.set(0);
-                } catch (Throwable th) {
-                    th.printStackTrace();
+                }
+                if (atomicInteger.get() == 1) {
+                    return true;
+                }
+                if (!YSMThreadPool.awaitTermination(100)) {
                     return false;
                 }
+                atomicInteger.set(0);
+            } catch (Throwable th) {
+                th.printStackTrace();
+                return false;
             }
         }
         return false;
@@ -1047,8 +1058,8 @@ public final class ServerModelManager {
 
     public static void validatePlayerModel(ServerPlayer serverPlayer) {
         if (!CACHE_NAME_INFO.isEmpty()) {
-            serverPlayer.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelInfoCap -> {
-                serverPlayer.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(authModelsCap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(serverPlayer, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(modelInfoCap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(serverPlayer, AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(authModelsCap -> {
                     if (authModelsCap.getAuthModels().removeIf(str -> !CACHE_NAME_INFO.containsKey(str))) {
                         NetworkHandler.sendToClientPlayer(new S2CSyncAuthModelsPacket(authModelsCap.getAuthModels()), serverPlayer);
                     }

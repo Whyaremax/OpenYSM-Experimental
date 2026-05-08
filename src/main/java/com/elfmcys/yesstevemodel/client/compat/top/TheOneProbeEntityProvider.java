@@ -32,7 +32,7 @@ public final class TheOneProbeEntityProvider implements Function<ITheOneProbe, V
 
     private static class ModelInfoEntityProvider implements IProbeInfoEntityProvider {
 
-        private static final String PROVIDER_ID = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "model_info").toString();
+        private static final String PROVIDER_ID = new ResourceLocation(YesSteveModel.MOD_ID, "model_info").toString();
 
         private ModelInfoEntityProvider() {
         }

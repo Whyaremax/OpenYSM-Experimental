@@ -21,7 +21,7 @@ public class VehicleRenderer extends GeoEntityRenderer<Entity, GeckoVehicleEntit
         if (Minecraft.getInstance().player == null || entity.isInvisibleTo(Minecraft.getInstance().player)) {
             return;
         }
-        entity.getCapability(VehicleCapabilityProvider.VEHICLE_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, VehicleCapabilityProvider.VEHICLE_CAP).ifPresent(cap -> {
             cap.tickModel();
             renderEntity(cap, entityYaw, partialTick, poseStack, bufferSource, packedLight);
         });
@@ -29,6 +29,6 @@ public class VehicleRenderer extends GeoEntityRenderer<Entity, GeckoVehicleEntit
 
     @NotNull
     public ResourceLocation getTextureLocation(Entity entity) {
-        return entity.getCapability(VehicleCapabilityProvider.VEHICLE_CAP).map((cap) -> cap.getTextureLocation()).orElse(MissingTextureAtlasSprite.getLocation());
+        return com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, VehicleCapabilityProvider.VEHICLE_CAP).map((cap) -> cap.getTextureLocation()).orElse(MissingTextureAtlasSprite.getLocation());
     }
 }

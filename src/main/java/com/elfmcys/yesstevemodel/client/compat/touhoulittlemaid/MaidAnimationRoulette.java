@@ -37,7 +37,7 @@ public class MaidAnimationRoulette {
         }
         Entity entity = ((EntityHitResult) hitResult).getEntity();
         if (entity instanceof EntityMaid) {
-            entity.getCapability(MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
                 ModelAssembly modelAssembly = cap.getModelAssembly();
                 if (modelAssembly != null && !modelAssembly.getModelData().getModelProperties().getExtraAnimation().isEmpty()) {
                     if (Minecraft.getInstance().screen == null) {

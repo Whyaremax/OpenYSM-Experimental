@@ -42,6 +42,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.loading.LoadingModList;
 import org.apache.commons.lang3.tuple.Pair;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
@@ -51,6 +52,13 @@ import java.util.Optional;
 public class ClientSetupEvent {
     public static Object nativeClientInit() {
         try {
+            try {
+                if (GL.getCapabilities() == null) {
+                    return Component.literal("YSM: OpenGL context not available");
+                }
+            } catch (IllegalStateException e) {
+                return Component.literal("YSM: OpenGL context not available");
+            }
             int maxTexSize = GL11.glGetInteger(GL11.GL_MAX_TEXTURE_SIZE);
             if (maxTexSize <= 0) {
                 return Component.literal("YSM: OpenGL context not available");

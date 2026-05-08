@@ -15,6 +15,6 @@ public enum ShadersTextureType {
     }
 
     public ResourceLocation appendSuffix(ResourceLocation resourceLocation) {
-        return ResourceLocation.fromNamespaceAndPath(resourceLocation.getNamespace(), resourceLocation.getPath() + this.suffix);
+        return new ResourceLocation(resourceLocation.getNamespace(), resourceLocation.getPath() + this.suffix);
     }
 }

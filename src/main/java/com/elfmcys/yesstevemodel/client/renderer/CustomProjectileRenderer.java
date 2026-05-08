@@ -7,7 +7,7 @@ import net.minecraft.world.entity.projectile.Projectile;
 
 public class CustomProjectileRenderer {
     public static boolean renderProjectile(Projectile projectile, float entityYaw, float f2, PoseStack poseStack, MultiBufferSource multiBufferSource, int i) {
-        return projectile.getCapability(ProjectileCapabilityProvider.PROJECTILE_CAP).map(cap -> {
+        return com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(projectile, ProjectileCapabilityProvider.PROJECTILE_CAP).map(cap -> {
             if (cap.isModelInitialized() && cap.isModelReady()) {
                 RendererManager.getProjectileRenderer().render(cap, entityYaw, f2, poseStack, multiBufferSource, i);
                 return false;

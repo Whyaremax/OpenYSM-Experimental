@@ -44,8 +44,8 @@ public class C2SRequestSwitchModelPacket {
     }
 
     private static void handleCapability(C2SRequestSwitchModelPacket message, ServerPlayer sender) {
-        sender.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
-            sender.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(cap2 -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(sender, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(sender, AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(cap2 -> {
                 String str = message.modelId;
                 if (!ServerModelManager.getServerModelInfo().containsKey(str) || ((ServerModelManager.getAuthModels().contains(str) && !cap2.containsModel(message.modelId)) || !ServerModelManager.getServerModelInfo().get(str).getModelInfo().getTextures().contains(message.textureId))) {
                     cap.resetToDefault();

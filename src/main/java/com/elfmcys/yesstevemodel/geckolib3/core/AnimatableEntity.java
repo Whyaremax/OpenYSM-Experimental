@@ -224,7 +224,7 @@ public abstract class AnimatableEntity<TEntity extends Entity> {
         LivingEntity livingEntity = entity instanceof LivingEntity ? (LivingEntity) entity : null;
         int tickCount = this instanceof IPreviewAnimatable ? ClientTickEvent.getTickCount() : entity.tickCount;
         float frameTime = partialTick != 1.0f ? partialTick : Minecraft.getInstance().getFrameTime();
-        boolean shouldSit = entity.isPassenger() && entity.getVehicle() != null && entity.getVehicle().shouldRiderSit();
+        boolean shouldSit = entity.isPassenger() && entity.getVehicle() != null;
         float limbSwingAmount = 0.0f;
         float limbSwing = 0.0f;
         if (!shouldSit && entity.isAlive() && livingEntity != null) {

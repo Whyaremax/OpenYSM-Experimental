@@ -36,7 +36,7 @@ public class TouhouMaidModelHandler {
         if (!entityMaid.isYsmModel()) {
             return;
         }
-        entityMaid.getCapability(MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entityMaid, MaidCapabilityProvider.MAID_CAP).ifPresent(cap -> {
             try {
                 cap.executeExpression(GeckoLibCache.parseSimpleExpression(str), true, false, null);
             } catch (ParseException e) {
@@ -50,7 +50,7 @@ public class TouhouMaidModelHandler {
             return;
         }
         if (entityMaid.isYsmModel()) {
-            projectile.getCapability(ProjectileModelCapabilityProvider.PROJECTILE_MODEL).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(projectile, ProjectileModelCapabilityProvider.PROJECTILE_MODEL).ifPresent(cap -> {
                 cap.setModel(entityMaid.getYsmModelId(), new Object2FloatOpenHashMap<>());
                 NetworkHandler.sendToTrackingEntity(new S2CSyncProjectileModelPacket(projectile.getId(), cap), projectile);
             });
@@ -62,7 +62,7 @@ public class TouhouMaidModelHandler {
             return;
         }
         if (entityMaid.isYsmModel() && entity.getFirstPassenger() == entity2) {
-            entity.getCapability(VehicleModelCapabilityProvider.VEHICLE_MODEL_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, VehicleModelCapabilityProvider.VEHICLE_MODEL_CAP).ifPresent(cap -> {
                 cap.setModel(entityMaid.getYsmModelId(), new Object2FloatOpenHashMap<>());
                 NetworkHandler.sendToTrackingEntity(new S2CSyncVehicleModelPacket(entity.getId(), cap), entity);
             });

@@ -153,7 +153,7 @@ public final class PlayerCapability extends CustomPlayerEntity {
 
     private void applyMolangDelta(int i, Int2FloatMap int2FloatMap) {
         if (i == this.currentModelHashId && this.entity.getVehicle() != null && this.entity.getVehicle().getFirstPassenger() == this.entity) {
-            this.entity.getVehicle().getCapability(VehicleCapabilityProvider.VEHICLE_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(this.entity.getVehicle(), VehicleCapabilityProvider.VEHICLE_CAP).ifPresent(cap -> {
                 cap.updateFloatMap(int2FloatMap);
             });
         }

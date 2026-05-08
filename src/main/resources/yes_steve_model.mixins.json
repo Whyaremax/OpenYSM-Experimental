@@ -15,6 +15,7 @@
     "client.WorldRendererMixin"
   ],
   "mixins": [
-    "AbstractArrowEntityMixin", "ProjectileEntityMixin", "ServerPlayerMixin"
+    "AbstractArrowEntityMixin", "EntityCapabilityPersistenceMixin", "ProjectileEntityMixin",
+    "ServerGamePacketListenerImplAccessor", "ServerPlayerMixin"
   ]
 }

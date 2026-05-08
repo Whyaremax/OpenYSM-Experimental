@@ -55,7 +55,7 @@ public class WatchCommand {
         try {
             IValue value = GeckoLibCache.parseSimpleExpression(string);
             minecraft.execute(() -> {
-                minecraft.player.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(minecraft.player, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                     AnimationDebugOverlay.getMolangWatch().addWatch(MolangWatchRegistry.EvaluationPhase.POST_ANIMATION, string, value);
                     if (!AnimationDebugOverlay.isDebugActive()) {
                         AnimationDebugOverlay.tryUpdateFromLocalPlayer();
@@ -75,7 +75,7 @@ public class WatchCommand {
         }
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.execute(() -> {
-            minecraft.player.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> AnimationDebugOverlay.getMolangWatch().clearAll());
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(minecraft.player, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> AnimationDebugOverlay.getMolangWatch().clearAll());
         });
         AnimationDebugOverlay.clearDebugLines();
         return Command.SINGLE_SUCCESS;

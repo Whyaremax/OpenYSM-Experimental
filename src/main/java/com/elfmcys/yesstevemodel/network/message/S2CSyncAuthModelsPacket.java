@@ -50,7 +50,7 @@ public class S2CSyncAuthModelsPacket {
     public static void handleCapability(S2CSyncAuthModelsPacket message) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player != null) {
-            minecraft.player.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(minecraft.player, AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(cap -> {
                 cap.setAuthModels(message.authModels);
             });
         }

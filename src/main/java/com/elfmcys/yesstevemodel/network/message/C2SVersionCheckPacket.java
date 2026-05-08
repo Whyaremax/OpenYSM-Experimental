@@ -36,14 +36,14 @@ public class C2SVersionCheckPacket {
         ServerPlayer sender = context.getSender();
         if (sender != null && NetworkHandler.setChannelVersion(context.getNetworkManager(), message.version)) {
             ServerModelManager.validatePlayerModel(sender);
-            sender.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(sender, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
                 cap.setMandatory(false);
                 cap.stopAnimation(sender);
             });
-            sender.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(sender, AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(cap -> {
                 NetworkHandler.sendToClientPlayer(new S2CSyncAuthModelsPacket(cap.getAuthModels()), sender);
             });
-            sender.getCapability(StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(sender, StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap -> {
                 NetworkHandler.sendToClientPlayer(new S2CSyncStarModelsPacket(cap.getStarModels()), sender);
             });
             ServerModelManager.requestPlayerAuth(sender, null);

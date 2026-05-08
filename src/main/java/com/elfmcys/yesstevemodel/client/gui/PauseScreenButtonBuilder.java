@@ -36,7 +36,7 @@ public class PauseScreenButtonBuilder {
             buttonBuild2.setTooltip(Tooltip.create(Component.translatable("key.yes_steve_model.open_extra_player_render.desc")));
             Button buttonBuild3 = Button.builder(Component.literal("😄"), button3 -> {
                 if (minecraft.player != null) {
-                    minecraft.player.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+                    com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(minecraft.player, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                         String str = cap.getModelId();
                         ModelAssembly modelAssembly = cap.getModelAssembly();
                         if (modelAssembly != null && !modelAssembly.getModelData().getModelProperties().getExtraAnimation().isEmpty()) {

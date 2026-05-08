@@ -19,7 +19,7 @@ import java.text.DecimalFormat;
 
 public class AnimationSlider extends ForgeSlider implements ISpecialWidget {
 
-    private static final ResourceLocation ROULETTE_TEXTURE = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "texture/roulette.png");
+    private static final ResourceLocation ROULETTE_TEXTURE = new ResourceLocation(YesSteveModel.MOD_ID, "texture/roulette.png");
 
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
 
@@ -51,8 +51,8 @@ public class AnimationSlider extends ForgeSlider implements ISpecialWidget {
 
     public void renderWidget(GuiGraphics guiGraphics, int i, int i2, float f) {
         Minecraft minecraft = Minecraft.getInstance();
-        guiGraphics.blitWithBorder(ROULETTE_TEXTURE, getX(), getY(), 0, getTextureY() + 24, this.width, this.height, 200, 15, 2, 3, 2, 2);
-        guiGraphics.blitWithBorder(ROULETTE_TEXTURE, getX() + ((int) (this.value * (this.width - 8))), getY(), 0, getHandleTextureY() + 24, 8, this.height, 200, 15, 2, 3, 2, 2);
+        guiGraphics.blit(ROULETTE_TEXTURE, getX(), getY(), 0.0f, 0.0f, this.width, this.height, 200, 15);
+        guiGraphics.blit(ROULETTE_TEXTURE, getX() + ((int) (this.value * (this.width - 8))), getY(), 0.0f, 0.0f, 8, this.height, 200, 15);
         renderScrollingString(guiGraphics, minecraft.font, 2, getFGColor() | (Mth.ceil(this.alpha * 255.0f) << 24));
     }
 }

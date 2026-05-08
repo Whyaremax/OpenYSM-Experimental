@@ -632,7 +632,7 @@ public class ClientModelManager {
             if (iconTexture != null) {
                 ResourceLocation location2 = FileTypeUtil.getPackIconLocation(packData.getPath());
                 Minecraft.getInstance().submit(() -> {
-                    Minecraft.getInstance().textureManager.register(location2, iconTexture);
+                    Minecraft.getInstance().getTextureManager().register(location2, iconTexture);
                 });
             }
         }
@@ -640,7 +640,7 @@ public class ClientModelManager {
         for (ModelPackData packData : modelPackMap.values()) {
             if (!newPackMap.containsKey(packData.getPath()) && packData.getTexture() != null) {
                 ResourceLocation location = FileTypeUtil.getPackIconLocation(packData.getPath());
-                Minecraft.getInstance().submit(() -> Minecraft.getInstance().textureManager.release(location));
+                Minecraft.getInstance().submit(() -> Minecraft.getInstance().getTextureManager().release(location));
             }
         }
         modelPackMap = newPackMap;

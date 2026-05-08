@@ -13,7 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 
 public class ModIconButton extends FlatColorButton {
 
-    private static final ResourceLocation ICON_TEXTURE = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "texture/icon.png");
+    private static final ResourceLocation ICON_TEXTURE = new ResourceLocation(YesSteveModel.MOD_ID, "texture/icon.png");
 
     public ModIconButton(int i, int i2) {
         super(i, i2, 20, 20, Component.empty(), button -> {
@@ -27,8 +27,8 @@ public class ModIconButton extends FlatColorButton {
         int i4 = (this.height - 16) / 2;
         LocalPlayer localPlayer = Minecraft.getInstance().player;
         if (localPlayer != null) {
-            localPlayer.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
-                localPlayer.getCapability(StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap2 -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap2 -> {
                     if (cap2.containsModel(cap.getModelId())) {
                         guiGraphics.blit(ICON_TEXTURE, getX() + i3, getY() + i4, 16, 16, 16.0f, 0.0f, 16, 16, 256, 256);
                     } else {
@@ -42,8 +42,8 @@ public class ModIconButton extends FlatColorButton {
     public void onPress() {
         LocalPlayer localPlayer = Minecraft.getInstance().player;
         if (localPlayer != null) {
-            localPlayer.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
-                localPlayer.getCapability(StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap2 -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+                com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap2 -> {
                     String str = cap.getModelId();
                     if (cap2.containsModel(str)) {
                         cap2.removeModel(str);

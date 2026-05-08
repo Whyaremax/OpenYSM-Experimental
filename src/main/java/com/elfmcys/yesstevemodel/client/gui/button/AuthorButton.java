@@ -89,7 +89,7 @@ public class AuthorButton extends Button {
 
     public void refreshContactComponents(GuiGraphics guiGraphics, Screen screen, int i, int i2) {
         if (this.isHovered && !this.componentList.isEmpty()) {
-            guiGraphics.renderComponentTooltip(screen.getMinecraft().font, this.componentList, i, i2);
+            guiGraphics.renderComponentTooltip(net.minecraft.client.Minecraft.getInstance().font, this.componentList, i, i2);
         } else if (this.i6 != -1) {
             this.i6 = -1;
             renderTooltip(false);

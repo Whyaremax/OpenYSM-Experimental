@@ -92,15 +92,15 @@ public class ModelCommand {
         }
         String finalTextureName = textureName;
         if (ignoreAuth) {
-            targets.forEach(player -> player.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
+            targets.forEach(player -> com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
                 cap.setModelAndTexture(modelName, finalTextureName);
                 cap.setMandatory(true);
                 context.getSource().sendSuccess(() -> Component.translatable("message.yes_steve_model.model.set.success", modelName, player.getScoreboardName()), true);
             }));
             return Command.SINGLE_SUCCESS;
         }
-        targets.forEach(player -> player.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
-            player.getCapability(AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(authCap -> {
+        targets.forEach(player -> com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, AuthModelsCapabilityProvider.AUTH_MODELS_CAP).ifPresent(authCap -> {
                 if (!ServerModelManager.getAuthModels().contains(modelName) || authCap.containsModel(modelName)) {
                     cap.setModelAndTexture(modelName, finalTextureName);
                     cap.setMandatory(true);
@@ -156,7 +156,7 @@ public class ModelCommand {
             str = "message.yes_steve_model.model.disable.false";
         }
         String str2 = str;
-        targets.forEach(player -> player.getCapability(ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
+        targets.forEach(player -> com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(player, ModelInfoCapabilityProvider.MODEL_INFO_CAP).ifPresent(cap -> {
             cap.setDisabled(bool);
             context.getSource().sendSuccess(() -> Component.translatable(str2, player.getScoreboardName()), true);
         }));

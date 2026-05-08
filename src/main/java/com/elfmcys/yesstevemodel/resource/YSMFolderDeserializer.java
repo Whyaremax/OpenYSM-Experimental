@@ -47,7 +47,7 @@ public class YSMFolderDeserializer implements AutoCloseable {
         } else if (sourcePath.toString().endsWith(".zip") || sourcePath.toString().endsWith(".ysm")) {
             URI uri = URI.create("jar:" + sourcePath.toUri());
             this.zipFileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
-            this.rootPath = this.zipFileSystem.getPath("/");
+            this.rootPath = selectArchiveRoot(this.zipFileSystem.getPath("/"));
             this.resourceMap = null;
         } else {
             throw new IllegalArgumentException("Unsupported file type. Expected directory or .zip");
@@ -55,6 +55,22 @@ public class YSMFolderDeserializer implements AutoCloseable {
 
         this.model = new RawYsmModel();
         this.model.formatVersion = 65535;
+    }
+
+    private static Path selectArchiveRoot(Path root) throws IOException {
+        if (isModelFolder(root)) {
+            return root;
+        }
+
+        List<Path> modelDirs = new ArrayList<>();
+        try (DirectoryStream<Path> entries = Files.newDirectoryStream(root)) {
+            for (Path entry : entries) {
+                if (Files.isDirectory(entry) && isModelFolder(entry)) {
+                    modelDirs.add(entry);
+                }
+            }
+        }
+        return modelDirs.size() == 1 ? modelDirs.get(0) : root;
     }
 
     public YSMFolderDeserializer(Map<String, byte[]> resources) {
@@ -1107,6 +1123,20 @@ public class YSMFolderDeserializer implements AutoCloseable {
             path = path.substring(1);
         }
         return path;
+    }
+
+    public static boolean isModelFolder(Path dir) {
+        if (dir == null || !Files.isDirectory(dir)) {
+            return false;
+        }
+        if (Files.isRegularFile(dir.resolve("ysm.json"))) {
+            return true;
+        }
+
+        boolean hasInfo = Files.isRegularFile(dir.resolve("info.json"));
+        boolean hasMain = Files.isRegularFile(dir.resolve("main.json")) || Files.isRegularFile(dir.resolve("models/main.json"));
+        boolean hasArm = Files.isRegularFile(dir.resolve("arm.json")) || Files.isRegularFile(dir.resolve("models/arm.json"));
+        return hasMain && (hasInfo || hasArm);
     }
 
     private String calculateFinalFolderHash() {

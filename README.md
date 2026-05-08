@@ -1,14 +1,14 @@
 <div align="center">
   <img src="images/brand.png" alt="logo" width="300"/>
   <h1>OpenYSM</h1>
-  <p>YSM开源替代品，基于2.6.5 forge</p>
+  <p>YSM开源替代品，基于2.6.5，当前工作树为 Fabric 1.20.1 port</p>
 </div>
 
 ## 说明
 
 本仓库包含了 YesSteveModel (YSM) 2.6.5（2026年4月）版本的完整源代码。
 
-包含1.20.1 Forge版本的全部源码。
+包含1.20.1 Forge版本的完整源码基础；当前工作树已经迁移为单 Fabric 1.20.1 jar，保留 OpenYSM 的模型加载、同步、渲染、命令、GUI、Java fallback 和 native scalar renderer 路径。
 
 **请注意：项目并非 Production Ready，可能存在命名语义错误，渲染错误等问题，如果您在使用过程中遇到了任何问题请打开 Issue 反馈，最好附带截图和可能的报错日志。**
 
@@ -18,10 +18,14 @@
 
 当前已经接入或验证：
 
+- Fabric Loom 1.20.1 单 jar 构建已接入，mod id 仍为 `yes_steve_model`，入口为 Fabric common/client initializer。
+- Forge 平台调用已替换或 shim 到 Fabric：配置、平台路径、mod 检测、声音注册、生命周期、事件、命令、网络和能力存储都可在 Fabric 编译。
+- 可选第三方兼容先做 Fabric-safe stub：CarryOn、Curios、Oculus、Touhou Little Maid 等外部 API 不再阻塞核心 jar 编译；真实 Fabric 集成需要逐个验证 API 后再恢复。
 - Forge 1.20.1 / YSM 2.6.5 的 Java 侧模型加载、渲染、动画控制器、音频和纹理解码路径。
 - 现代已加密 `.ysm` 模型加载，以及原版/旧版 YSM flat-folder 结构兼容：`info.json`、`main.json`、`arm.json`、`*.animation.json` 和纹理可以合成为当前 descriptor 结构。
 - 旧版 `.ysm` 读取 fallback：优先走新版 `YsmCrypt.decryptYsmFile`，失败后尝试 legacy YSGP v1/v2 解包并交给 folder deserializer。
 - legacy `extra.animation.json` 会补齐 `properties.extra_animation`，让动画轮盘能显示和触发旧模型的额外动画。
+- legacy/未加密兼容性 harness 已接入：当前覆盖 27 个内置未加密 folder 模型、去掉 `ysm.json` 的 flat-folder fixture、2 个本地私有 format 9/15 `.ysm` 真实样本，以及 2 个单顶层模型目录 `.zip` 导出样本。私有样本不入仓，可用 `./gradlew legacyModelCompatibilityHarness -Pysm.compatFixtureDir=/path/to/fixtures` 复跑。
 - 默认模型握手/同步路径已修正，避免客户端和服务器在默认模型处理上不一致。
 - 可选 native renderer 已接入 Java/JNI render-first fast path：
   - 配置模式保留 `AUTO`、`OFF`、`RENDER_ONLY`、`FULL_EXPERIMENTAL`。
@@ -33,8 +37,22 @@
 仍然实验中：
 
 - native renderer 永久保留 Java fallback；任何 native 库加载、自检、缓存、DirectBuffer 或兼容路径失败都应回退 Java。
-- 旧版/未加密模型仍需要更多真实样本回归，特别是低版本二进制格式和边缘动画数据。
+- 旧版/未加密模型仍可继续扩充更多第三方真实样本矩阵；当前已覆盖本地 format 9/15 与未加密 folder/zip 样本。
 - AVX2/SIMD、GPU renderer、native parser/audio/crypto/zstd 加速暂时不是当前补丁目标。
+
+## 构建与验证
+
+当前 Fabric 开发 jar 输出到 `build/devlibs/`，可发布/安装的 remap 后 jar 输出到 `build/libs/ysm-2.6.5-fabric+mc1.20.1.jar`。
+
+常用检查：
+
+- `./gradlew compileJava`
+- `./gradlew legacyModelCompatibilityHarness`
+- `./gradlew legacyModelCompatibilityHarness -Pysm.compatFixtureDir=/path/to/fixtures`
+- `./gradlew nativeRendererHarness`
+- `./gradlew remapJar`
+- `./gradlew runServer`
+- `git diff --check`
 
 ## 为什么开源？
 
@@ -64,15 +82,19 @@ OpenYSM 开发组一直非常支持开放、自由的游戏开发氛围，我们
 - [x] Webp、Avif等纹理的解码
 - [x] 符合YSM标准的服务器客户端通讯握手流程
 - [x] 模型的读取与渲染
+- [x] Fabric 1.20.1 单 jar 构建、metadata、入口和基础运行路径
+- [x] Forge 平台服务迁移为 Fabric wrapper/shim，核心命令、网络、事件和能力存储可编译运行
+- [x] 可选第三方 mod 兼容先降级为 Fabric-safe stub，避免核心 OpenYSM 因外部 API 缺失失败
 - [x] 子模型动画控制器
 - [x] 与服务器通讯握手时默认模型未正确处理
 - [x] 原版/旧版 flat-folder 模型结构兼容：`info.json`、`main.json`、`arm.json`、动画 JSON 和纹理
 - [x] legacy `.ysm` fallback 读取路径已接入
 - [x] legacy extra animation 会补齐动画轮盘数据
+- [x] 更多低版本二进制模型/未加密模型真实样本兼容性测试：`legacyModelCompatibilityHarness` 已覆盖内置未加密模型、去 descriptor flat-folder、私有 format 9/15 `.ysm` 和单顶层目录 zip 导出样本
 - [x] 可选 scalar native render-first fast path 已接入；Windows x64 已通过实机渲染验证，Java fallback 永久保留
 - [x] CPU Scalar V2 native harness 已覆盖骨骼父子层级、part mask、36-byte packed 输出、glow light、projection culling、隐藏骨骼、动画变换和非均匀缩放法线
 - [ ] CPU Scalar V2 在 Windows benchmark 场景中继续做 `/openysm native parity` 和 FPS 回归
-- [ ] 更多低版本二进制模型/未加密模型真实样本兼容性测试
+- [ ] 逐个恢复并验证真实 Fabric 第三方兼容实现
 - [ ] AVX2/SIMD native renderer 优化（等 scalar path 足够稳定后再做）
 - [ ] YSGPHeader生成
 
@@ -81,8 +103,10 @@ OpenYSM 开发组一直非常支持开放、自由的游戏开发氛围，我们
 我们相比已经发布的 YSM 版本做出了以下修改
 
 - 使用 Java 重写了加载和渲染逻辑，现在可以脱离 Native 运行，例如在 MacOS，RISC-V 甚至手机上
+- 迁移为 Fabric 1.20.1 单 jar，保留原 OpenYSM/YSM 2.6.5 的核心模型、同步和渲染行为
 - 支持现有的已加密的 YSM 模型
 - 支持一部分原版/旧版 YSM 模型目录和旧 `.ysm` 包作为兼容输入
+- 兼容单顶层模型目录的 `.zip` 导出包，方便复用原版/旧版模型导出结果
 - 补齐旧模型 extra animation 到动画轮盘所需的 metadata
 - 添加了可选 native scalar renderer，用于测试 Java/JNI 直写顶点缓冲的渲染加速；默认仍以 Java renderer 为稳定 fallback
 - 添加了`/openysm cache dump`命令帮助你调试模型传输，导出服务器中的所有模型

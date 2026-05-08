@@ -50,7 +50,7 @@ public class C2SSetStarModelPacket {
     }
 
     private static void handleCapability(C2SSetStarModelPacket message, ServerPlayer sender) {
-        sender.getCapability(StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap -> {
+        com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(sender, StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap -> {
             if (message.isAdd) {
                 cap.addModel(message.modelId);
             } else {

@@ -11,7 +11,7 @@ import net.minecraft.world.phys.Vec3;
 
 public class CustomVehicleRenderer {
     public static boolean renderVehicle(Entity entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
-        return entity.getCapability(VehicleCapabilityProvider.VEHICLE_CAP).map(cap -> {
+        return com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(entity, VehicleCapabilityProvider.VEHICLE_CAP).map(cap -> {
             if (cap.isModelInitialized() && cap.isModelReady()) {
                 RendererManager.getVehicleRenderer().renderEntity(cap, getBodyRotation(entity, entityYaw, partialTick), partialTick, poseStack, bufferSource, packedLight);
                 return false;
@@ -34,7 +34,7 @@ public class CustomVehicleRenderer {
         float bodyYaw = Mth.rotLerp(partialTick, entity.yBodyRotO, entity.yBodyRot);
         float headYaw = Mth.rotLerp(partialTick, entity.yHeadRotO, entity.yHeadRot);
 
-        if (entity.isPassenger() && entity.getVehicle() != null && entity.getVehicle().shouldRiderSit()) {
+        if (entity.isPassenger() && entity.getVehicle() != null) {
             Entity vehicle = entity.getVehicle();
             if (vehicle instanceof LivingEntity livingVehicle) {
                 float vehicleBodyYaw = Mth.rotLerp(partialTick, livingVehicle.yBodyRotO, livingVehicle.yBodyRot);

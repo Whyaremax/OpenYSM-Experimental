@@ -13,7 +13,7 @@ public class ModSoundEvents {
     public static final SoundEvent CUSTOM_SOUND = createSoundEvent("custom");
 
     private static SoundEvent createSoundEvent(String str) {
-        SoundEvent soundEventCreateFixedRangeEvent = SoundEvent.createFixedRangeEvent(ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, str), 16.0f);
+        SoundEvent soundEventCreateFixedRangeEvent = SoundEvent.createFixedRangeEvent(new ResourceLocation(YesSteveModel.MOD_ID, str), 16.0f);
         REGISTER.register(str, () -> soundEventCreateFixedRangeEvent);
         return soundEventCreateFixedRangeEvent;
     }

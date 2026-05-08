@@ -40,7 +40,7 @@ public class ModScreenEvent {
     }
 
     public static void openScreen(PlayerModelScreen modelScreen) {
-        modelScreen.getMinecraft().setScreen(Objects.requireNonNullElseGet(receivedScreen, () -> {
+        net.minecraft.client.Minecraft.getInstance().setScreen(Objects.requireNonNullElseGet(receivedScreen, () -> {
             return new DebugAnimationScreen(modelScreen);
         }));
     }

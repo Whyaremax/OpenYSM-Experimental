@@ -39,7 +39,7 @@ import java.util.Objects;
 
 public class ModelButton extends Button {
 
-    private static final ResourceLocation ICON_TEXTURE = ResourceLocation.fromNamespaceAndPath(YesSteveModel.MOD_ID, "texture/icon.png");
+    private static final ResourceLocation ICON_TEXTURE = new ResourceLocation(YesSteveModel.MOD_ID, "texture/icon.png");
 
     public final boolean isStarred;
 
@@ -132,7 +132,7 @@ public class ModelButton extends Button {
     public void onPress() {
         LocalPlayer localPlayer;
         if (!this.isStarred && (localPlayer = Minecraft.getInstance().player) != null) {
-            localPlayer.getCapability(PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(localPlayer, PlayerCapabilityProvider.PLAYER_CAP).ifPresent(cap -> {
                 if (NetworkHandler.isClientConnected()) {
                     if (cap.hasMolangVars(this.modelIdHolder.getModelAssembly().getModelData().getHashId())) {
                         cap.initModelWithTexture(this.modelIdHolder.getModelId(), this.modelIdHolder.getCurrentTextureName());
@@ -202,7 +202,7 @@ public class ModelButton extends Button {
             guiGraphics.fillGradient(x, y, x + this.width, y + this.height, 3500, -1625152990, -1625152990);
         }
         if (minecraft.player != null) {
-            minecraft.player.getCapability(StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap -> {
+            com.elfmcys.yesstevemodel.capability.YsmCapabilities.get(minecraft.player, StarModelsCapabilityProvider.STAR_MODELS_CAP).ifPresent(cap -> {
                 if (cap.containsModel(this.modelIdHolder.getModelId())) {
                     guiGraphics.blit(ICON_TEXTURE, (x + this.width) - 14, y, i3, 16.0f, 0.0f, 16, 16, 256, 256);
                 }
@@ -224,12 +224,12 @@ public class ModelButton extends Button {
                 if (this.detailedTooltipLines == null) {
                     this.detailedTooltipLines = ModelMetadataPresenter.buildModelTooltip(this.renderContext, selected, this.modelIdHolder.getModelId(), true);
                 }
-                guiGraphics.renderComponentTooltip(screen.getMinecraft().font, this.detailedTooltipLines, i, i2);
+                guiGraphics.renderComponentTooltip(net.minecraft.client.Minecraft.getInstance().font, this.detailedTooltipLines, i, i2);
             } else {
                 if (this.tooltipLines == null) {
                     this.tooltipLines = ModelMetadataPresenter.buildModelTooltip(this.renderContext, selected, this.modelIdHolder.getModelId(), false);
                 }
-                guiGraphics.renderComponentTooltip(screen.getMinecraft().font, this.tooltipLines, i, i2);
+                guiGraphics.renderComponentTooltip(net.minecraft.client.Minecraft.getInstance().font, this.tooltipLines, i, i2);
             }
             guiGraphics.pose().popPose();
         }
