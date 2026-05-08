@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import com.elfmcys.yesstevemodel.network.NetworkHandler;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
@@ -25,6 +26,7 @@ public final class YsmFabricLifecycle {
         }
         commonRegistered = true;
 
+        NetworkHandler.init();
         CommandRegistry.MODEL_IDS.toString();
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 CommandRegistry.onRegisterCommand(new RegisterCommandsEvent(dispatcher, environment, registryAccess)));
@@ -39,8 +41,10 @@ public final class YsmFabricLifecycle {
                 CapabilityEvent.onEntityJoinLevel(new EntityJoinLevelEvent(entity)));
         EntityTrackingEvents.START_TRACKING.register((trackedEntity, player) ->
                 CapabilityEvent.onStartTracking(new PlayerEvent.StartTracking(player, trackedEntity)));
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                CapabilityEvent.onEntityJoinLevel(new EntityJoinLevelEvent(handler.player)));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            CapabilityEvent.onEntityJoinLevel(new EntityJoinLevelEvent(handler.player));
+            EnterServerEvent.onPlayerLoggedIn(new PlayerEvent.PlayerLoggedInEvent(handler.player));
+        });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 PlayerLogoutEvent.onPlayerLoggedOut(new PlayerEvent.PlayerLoggedOutEvent(handler.player)));
     }

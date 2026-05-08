@@ -10,7 +10,8 @@
   },
   "client": [
     "client.ArrowEntityAccessor", "client.BufferSourceMixin", "client.EntityRenderDispatcherMixin",
-    "client.FishingHookAccessor", "client.InventoryScreenMixin", "client.LivingEntityAccessor",
+    "client.FishingHookAccessor", "client.InventoryScreenMixin", "client.ItemInHandRendererMixin", "client.LivingEntityAccessor",
+    "client.PlayerRendererMixin",
     "client.LivingRendererMixin", "client.PauseScreenMixin", "client.ThrowableItemProjectileAccessor",
     "client.WorldRendererMixin"
   ],

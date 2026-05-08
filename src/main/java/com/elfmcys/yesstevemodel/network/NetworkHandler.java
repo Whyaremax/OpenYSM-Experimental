@@ -30,6 +30,7 @@ public final class NetworkHandler {
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(CHANNEL_ID, () -> VERSION, str -> true, str2 -> true);
 
     private static final Map<Connection, String> CHANNEL_VERSIONS = Collections.synchronizedMap(new WeakHashMap<>());
+    private static boolean initialized;
 
     public static boolean setChannelVersion(Connection connection, String str) {
         if (connection == null || CHANNEL_VERSIONS.containsKey(connection)) {
@@ -64,6 +65,11 @@ public final class NetworkHandler {
     }
 
     public static void init() {
+        if (initialized) {
+            return;
+        }
+        initialized = true;
+
         CHANNEL.registerMessage(1, S2CModelSyncPayload.class, S2CModelSyncPayload::encode, S2CModelSyncPayload::decode, S2CModelSyncPayload::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(2, C2SModelSyncPayload.class, C2SModelSyncPayload::encode, C2SModelSyncPayload::decode, C2SModelSyncPayload::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(3, S2CExecuteMolangPacket.class, S2CExecuteMolangPacket::encode, S2CExecuteMolangPacket::decode, S2CExecuteMolangPacket::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));

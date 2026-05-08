@@ -12,6 +12,7 @@ import com.elfmcys.yesstevemodel.client.input.PlayerModelToggleKey;
 import com.elfmcys.yesstevemodel.client.renderer.AnimationDebugOverlay;
 import com.elfmcys.yesstevemodel.client.renderer.LoadingStateOverlay;
 import com.elfmcys.yesstevemodel.client.renderer.ModelSyncStateOverlay;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
@@ -22,6 +23,7 @@ import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.gui.overlay.ForgeGui;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 final class YsmFabricClientLifecycle {
@@ -53,6 +55,8 @@ final class YsmFabricClientLifecycle {
                 ClientPlayerJoinNotification.onPlayerLogin(new net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingIn()));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
                 ClientPlayerJoinNotification.onPlayerLogout(new net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingOut()));
+        ClientEntityEvents.ENTITY_LOAD.register((entity, world) ->
+                EntityJoinCallbackEvent.onEntityJoinLevel(new EntityJoinLevelEvent(entity)));
         HudRenderCallback.EVENT.register(YsmFabricClientLifecycle::renderHud);
     }
 
